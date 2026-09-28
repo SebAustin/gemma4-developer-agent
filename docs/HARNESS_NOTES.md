@@ -1,0 +1,36 @@
+# Harness notes (verified by reading the source)
+
+Source: `swegemma 0.2.7`, `adk_submission 0.2.11`, `adk_eval_core 0.1.0` and `google-adk 1.36.1`, all from the Kaggle dataset `metric/gemma-4-developer-agent-wheelhouse`. Run `scripts/fetch_harness.sh`, then read `.venv/lib/python3.12/site-packages/`.
+
+## Skills (`skills:` on an LlmAgent)
+- `resolve_skills` turns the list into an ADK `SkillToolset`. That adds the tools `load_skill`, `load_skill_resource` and `run_skill_script`, and appends a default skill system instruction plus an XML list of skills (name and description) to every request.
+- `run_skill_script(skill_name, file_path, args)`: `args` can be a list of strings (passed verbatim as argv) or a dict (turned into `--key value`).
+- Execution (`_SkillScriptCodeExecutor`) is a self-extracting wrapper. It writes **all** of the skill's files to a `tempfile.TemporaryDirectory`, `chdir`s there, and runs the script via `runpy`. swegemma's `AdkSandboxCodeExecutor` writes that wrapper to `<workspace>/.adk_exec_<id>.py`, runs `python3` on it with cwd set to the workspace, then deletes it.
+  - A script's cwd is **not** the repo. Discover the root via `sys.path[0]`, `PYTHONPATH`, `PWD` or `/workspace` (see `skills/swe/scripts/_common.py`).
+  - In the subprocess sandbox the repo is **not** at `/workspace`. Path rewriting only applies to shell command strings, not file contents.
+  - While a script runs, `.adk_exec_*.py` is an untracked file in the repo, so ignore it in `git status` checks.
+- Skill tools are **not** swegemma `@budget_gated` tools, so they don't count toward `max_tool_calls`. They are still subject to the time budget (the executor checks `budget_check_fn` and the remaining time) and to `max_turns`.
+- Skill output is not truncated by the harness (the 5k-char cap only applies to `run_command`). Scripts must cap their own output.
+
+## Instruction templating
+- ADK's `inject_session_state` replaces every `{+[^{}]*}+` match whose content is an identifier (optionally with a `?` suffix or an `app:`/`user:`/`temp:` prefix).
+- If the key is missing from session state, it raises `KeyError`, which kills the task.
+- Session state holds `problem_description`, plus `hints` only when a task has hints. No training task has hints, so use `{hints?}`.
+- Non-identifier braces such as `{"a": 1}` are left untouched. `g4 validate` enforces all of this.
+
+## Scoring flow facts
+- `Evaluator.run()` supports `concurrency` (asyncio semaphore; default 1). The official scorer (`scripts/inference.py`) is **not** shipped, so it is unknown whether it runs tasks concurrently. Budget per-task time as if serial: 12 h ÷ ~120 tasks ≈ 6 min.
+- Kaggle notebooks use `sandbox='subprocess'` because there is no Docker.
+- The docker sandbox is only for local runs (`swebench-sandbox:latest`).
+- `setup_gemma_model_registry(served_model=...)` routes all Gemma aliases to one served model. That lets us smoke-test with a small local model while keeping the competition model name in `agent.yaml`.
+
+## Test-dependency environment (important for interpreting dev scores)
+- **Docker sandbox** (`install_test_dependencies`): streams unpacked wheels from the wheels dir into site-packages, **deduplicated to the highest version per package**. `sandbox/setup.py --fast-path` only writes a `.pth` file and the pytest config; it does not pin versions.
+  - Older fastapi commits then get starlette 1.x and fail with `Router.__init__() got an unexpected keyword argument 'on_startup'`, even with the reference patch.
+- **Subprocess sandbox** (Kaggle notebooks) skips dependency installation entirely and uses the host image's packages.
+- The real scorer references a private `metric/gemma-4-developer-agent-metric-data` dataset (a sandbox and wheels of its own) and "secret bundle" hydration in `Evaluator`. **Neither local nor notebook environments are guaranteed to match it.**
+- So measure the **oracle ceiling** per environment (`python -m g4agent.oracle_run --split full`, which applies the gold patch through the real harness). Report agent scores as resolved / oracle-resolvable as well as raw.
+- The public wheels lack several fastapi test deps: `typing_inspection`, `inline_snapshot`, `dirty_equals`, `pyjwt`, `pwdlib`, `python-multipart`, and others. Local runs use `data/wheels_local` (official wheels hard-linked together with `data/wheels_extra`, downloaded with `--no-deps` so no pinned package gets upgraded).
+- **Package shadowing:** the public wheel set contains the benchmark repos themselves (rich, requests, httpx, fastapi). Injected into site-packages, they shadow the patched `/workspace` copy, so tests import the *released* package and the patch is ignored. The hidden test repos are private, so this can't happen at scoring time.
+- `g4agent.local_env` builds a per-task wheel set: it drops the repo's own distribution and keeps only versions satisfying the snapshot's declared pins (fixing the starlette clash). It also gives each set its own `tempfile` dir, because the harness caches unpacked wheels under a fixed name. Result: the oracle went from 1/5 to 5/5 on smoke5.
+- Apple Silicon: build the sandbox image with `--platform linux/amd64`, because the wheels are x86_64.

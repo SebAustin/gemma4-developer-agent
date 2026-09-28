@@ -1,0 +1,13 @@
+data/
+vendor/
+results/
+dist/
+*.zip
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.remember/
+.DS_Store
+kaggle/runs/
+results_oracle_*.log
