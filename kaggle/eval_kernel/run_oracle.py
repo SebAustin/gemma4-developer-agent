@@ -40,8 +40,11 @@ def install_harness() -> None:
 def main() -> None:
     global DATA_DIR
     install_harness()
-    if not DATA_DIR.exists():
-        DATA_DIR = Path(glob.glob("/kaggle/input/**/tasks.jsonl", recursive=True)[0]).parent
+    if not (DATA_DIR / "tasks.jsonl").exists():
+        hits = sorted(glob.glob("/kaggle/input/**/tasks.jsonl", recursive=True), key=len)
+        if not hits:
+            raise FileNotFoundError("tasks.jsonl not found under /kaggle/input")
+        DATA_DIR = Path(hits[0]).parent
     AGENT_DIR.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(io.BytesIO(base64.b64decode(BUNDLE_ZIP_B64))) as zf:
         zf.extractall(AGENT_DIR)

@@ -34,7 +34,7 @@ async def run_one(task, bundle: Path, results: Path, data: Path):
     from swegemma.config import EvalConfig, build_submission_limits
     from swegemma.evaluate import Evaluator
 
-    model = ScriptedLlm(model=MODEL, plan=oracle_plan(task), step=0, transcript=[])
+    model = ScriptedLlm(model=MODEL, plan=oracle_plan(task), step=0)
     models = ModelRegistry()
     models.register(MODEL, model)
     limits, gen_constraints = build_submission_limits()

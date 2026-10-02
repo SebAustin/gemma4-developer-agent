@@ -34,3 +34,8 @@ Source: `swegemma 0.2.7`, `adk_submission 0.2.11`, `adk_eval_core 0.1.0` and `go
 - **Package shadowing:** the public wheel set contains the benchmark repos themselves (rich, requests, httpx, fastapi). Injected into site-packages, they shadow the patched `/workspace` copy, so tests import the *released* package and the patch is ignored. The hidden test repos are private, so this can't happen at scoring time.
 - `g4agent.local_env` builds a per-task wheel set: it drops the repo's own distribution and keeps only versions satisfying the snapshot's declared pins (fixing the starlette clash). It also gives each set its own `tempfile` dir, because the harness caches unpacked wheels under a fixed name. Result: the oracle went from 1/5 to 5/5 on smoke5.
 - Apple Silicon: build the sandbox image with `--platform linux/amd64`, because the wheels are x86_64.
+
+## vLLM memory with LoRA (Kaggle eval kernel)
+- With `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1` (set by the official notebook), `gpu_memory_utilization=0.80` behaves like about 0.62. Enabling LoRA (`max_loras=8`, `max_lora_rank=128`) then leaves a negative KV-cache budget on 4x L4: "No available memory for the cache blocks", seen 2026-09-28 with the sample bundle.
+- The eval kernel therefore copies the official notebook (0.90). That leaves roughly 1.8 GiB of KV cache per GPU.
+- **Risk:** HARNESS_README says the scorer uses 0.80 with the same LoRA settings. The sample (LoRA) bundle does score on the leaderboard, so the scorer evidently starts. Still, before submitting our own LoRA bundle, verify it on a scorer-identical config, and keep adapter rank small.

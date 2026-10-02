@@ -2,7 +2,7 @@
 
 Rendered by `g4 kernel` (src/g4agent/kaggle_ops.py), which replaces the __G4_*__ placeholders.
 Mirrors the official "Getting Started" notebook (wheelhouse install -> VllmServer -> Evaluator),
-with vLLM settings matching the scorer (gpu_memory_utilization 0.80, max_model_len 32768).
+with vLLM settings matching the official notebook (see GPU_MEMORY_UTILIZATION; max_model_len 32768).
 Outputs /kaggle/working/results/** and /kaggle/working/run_meta.json.
 """
 
@@ -35,26 +35,43 @@ os.environ.update({
     "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
 })
 
-WHEELHOUSE_DIR = Path("/kaggle/input/datasets/metric/gemma-4-developer-agent-wheelhouse")
-DATA_DIR = Path("/kaggle/input/competitions/gemma-4-developer-agent")
-MODEL_PATH = Path("/kaggle/input/models/google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2")
+# First-guess mount points; notebook and script kernels mount inputs under different roots,
+# so each is confirmed (or found) by find_input before any GPU work starts.
+DEFAULT_WHEELHOUSE_DIR = Path("/kaggle/input/datasets/metric/gemma-4-developer-agent-wheelhouse")
+DEFAULT_DATA_DIRS = (Path("/kaggle/input/competitions/gemma-4-developer-agent"),
+                     Path("/kaggle/input/gemma-4-developer-agent"))
+DEFAULT_MODEL_DIR = Path("/kaggle/input/models/google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2")
+# Same as the official Getting-Started notebook. With VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1,
+# 0.80 behaves like ~0.62 and enabling LoRA (8 slots, rank 128) leaves no KV cache on 4x L4.
+GPU_MEMORY_UTILIZATION = 0.90
 WORKING_DIR = Path("/kaggle/working")
 AGENT_DIR = WORKING_DIR / "bundle"
 RESULTS_DIR = WORKING_DIR / "results"
 TARGET_MODEL_NAME = "gemma-4-31b-it-qat-w4a16-ct"
 
 
-def find_input(path: Path, name: str) -> Path:
-    """Kaggle mounts inputs under slightly different roots depending on the image."""
-    if path.exists():
-        return path
-    hits = [Path(p) for p in glob.glob(f"/kaggle/input/**/{name}", recursive=True)]
+def find_input(defaults: tuple[Path, ...], marker: str, path_contains: str = "") -> Path:
+    """Return the first directory holding ``marker`` (a filename or glob): the defaults first,
+    then the shortest match anywhere under /kaggle/input whose path contains ``path_contains``."""
+    for d in defaults:
+        if glob.glob(str(d / marker)):
+            return d
+    hits = sorted({Path(p).parent for p in glob.glob(f"/kaggle/input/**/{marker}", recursive=True)
+                   if path_contains in p}, key=lambda p: len(str(p)))
     if not hits:
-        raise FileNotFoundError(f"input {name} not found under /kaggle/input")
+        raise FileNotFoundError(f"no input containing {marker!r} ({path_contains!r}) under /kaggle/input")
     return hits[0]
 
 
-def install_wheelhouse() -> None:
+def locate_inputs() -> tuple[Path, Path, Path]:
+    """(data dir, model dir, wheelhouse dir), resolved up front so a missing input fails fast."""
+    data_dir = find_input(DEFAULT_DATA_DIRS, "tasks.jsonl")
+    model_dir = find_input((DEFAULT_MODEL_DIR,), "config.json", "gemma-4-31b-it-qat-w4a16-ct")
+    wheelhouse = find_input((DEFAULT_WHEELHOUSE_DIR,), "swegemma-*.whl")
+    return data_dir, model_dir, wheelhouse
+
+
+def install_wheelhouse(src: Path) -> None:
     for pattern in ("/usr/local/lib/python*/dist-packages/*cutlass*.pth",
                     "/usr/local/lib/python*/site-packages/*cutlass*.pth"):
         for pth in glob.glob(pattern):
@@ -62,7 +79,6 @@ def install_wheelhouse() -> None:
                 os.unlink(pth)
             except OSError:
                 pass
-    src = find_input(WHEELHOUSE_DIR, "gemma-4-developer-agent-wheelhouse")
     tmp_whl = Path("/tmp/wheelhouse")
     tmp_whl.mkdir(parents=True, exist_ok=True)
     for w in src.glob("*.whl"):
@@ -83,7 +99,7 @@ def unpack_bundle() -> None:
         zf.extractall(AGENT_DIR)
 
 
-def start_server():
+def start_server(model_dir: Path):
     import torch
     import litellm
     from adk_submission import VllmConfig, VllmServer, discover_adapters
@@ -95,9 +111,9 @@ def start_server():
     adapters = discover_adapters(str(AGENT_DIR), adapter_extensions=ALLOWED_ADAPTER_EXTENSIONS)
     gpus = torch.cuda.device_count()
     cfg = VllmConfig(
-        model=str(find_input(MODEL_PATH, "gemma-4-31b-it-qat-w4a16-ct")), port=8000, host="127.0.0.1",
+        model=str(model_dir), port=8000, host="127.0.0.1",
         tool_call_parser="gemma4", reasoning_parser="gemma4", max_model_len=32768,
-        dtype="bfloat16", gpu_memory_utilization=0.80, enable_auto_tool_choice=True,
+        dtype="bfloat16", gpu_memory_utilization=GPU_MEMORY_UTILIZATION, enable_auto_tool_choice=True,
         enable_lora=True, max_loras=8, max_lora_rank=128,
         tensor_parallel_size=4 if gpus >= 4 else (2 if gpus >= 2 else 1), startup_timeout=60 * 20,
     )
@@ -117,53 +133,64 @@ def load_eval_section() -> dict:
     return raw.get("evaluation", raw)
 
 
-def main() -> None:
-    t0 = time.time()
-    install_wheelhouse()
-    unpack_bundle()
-    server, models, adapters, gpus = start_server()
-    t_server = time.time()
-
-    from google.adk.agents.context_cache_config import ContextCacheConfig
-    from google.adk.apps._configs import EventsCompactionConfig
-    from swegemma.config import EvalConfig, build_submission_limits
-    from swegemma.evaluate import Evaluator
-
-    ev = load_eval_section()
-    limits, gen_constraints = build_submission_limits()
-    turns = ev.get("max_turns", ev.get("max_llm_calls"))
-    config = EvalConfig(
-        tasks_path=DATA_DIR / "tasks.jsonl", snapshots_dir=DATA_DIR / "snapshots",
-        results_dir=RESULTS_DIR, submission_dir=AGENT_DIR, models=models, sandbox="subprocess",
-        timeout_seconds=int(ev.get("timeout_seconds", 300)),
-        max_time_minutes=float(ev.get("max_time_minutes", 60.0)),
-        max_tool_calls=int(ev.get("max_tool_calls", 100)),
-        max_turns=int(turns) if turns is not None else None,
-        limits=limits, generation_constraints=gen_constraints, adapter_manifest=adapters,
-        context_cache_config=ContextCacheConfig(min_tokens=2048, ttl_seconds=1800, cache_intervals=10),
-        # Scorer values per HARNESS_README section 7.2.
-        events_compaction_config=EventsCompactionConfig(compaction_interval=5, overlap_size=2,
-                                                        token_threshold=14336, event_retention_size=5),
-        graph_dir=str(DATA_DIR / "graphs"), embeddings_dir=str(DATA_DIR / "embeddings"),
-        wheels_dir=DATA_DIR / "wheels", task_ids=TASK_IDS, concurrency=CONCURRENCY,
-        display_mode="quiet", verbose=False,
-    )
-    result = asyncio.run(Evaluator(config).run())
-    t_end = time.time()
-
-    rows = [{"instance_id": r.instance_id, "resolved": bool(r.resolved), "tool_calls": r.tool_calls,
-             "duration_s": round(r.duration_seconds or 0.0, 1), "patch_chars": len(r.agent_patch or ""),
-             "error": (r.error or "")[:300]} for r in result.task_results]
+def write_run_meta(gpus: int, ev: dict, setup_s: float, eval_s: float, status: str) -> dict:
+    """Summarize from the harness's append-only task_results.jsonl, so a crashed or timed-out
+    run still reports every task that finished."""
+    path = RESULTS_DIR / "task_results.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()] if path.exists() else []
+    tasks = [{"instance_id": r.get("instance_id"), "resolved": bool(r.get("resolved")),
+              "tool_calls": r.get("tool_calls"), "duration_s": r.get("duration_seconds"),
+              "patch_chars": r.get("agent_patch_size"), "error": (r.get("error") or "")[:300]} for r in rows]
+    resolved = sum(t["resolved"] for t in tasks)
     meta = {
-        "run_name": RUN_NAME, "n_tasks": len(TASK_IDS), "concurrency": CONCURRENCY, "gpus": gpus,
-        "eval_config": ev, "setup_s": round(t_server - t0, 1), "eval_s": round(t_end - t_server, 1),
-        "resolved": sum(r["resolved"] for r in rows),
-        "resolution_rate": round(sum(r["resolved"] for r in rows) / max(1, len(rows)), 4),
-        "tasks": rows,
+        "run_name": RUN_NAME, "status": status, "n_tasks": len(TASK_IDS), "n_finished": len(tasks),
+        "concurrency": CONCURRENCY, "gpus": gpus, "eval_config": ev, "setup_s": round(setup_s, 1),
+        "eval_s": round(eval_s, 1), "resolved": resolved,
+        "resolution_rate": round(resolved / max(1, len(TASK_IDS)), 4), "tasks": tasks,
     }
     (WORKING_DIR / "run_meta.json").write_text(json.dumps(meta, indent=1))
     print(json.dumps({k: v for k, v in meta.items() if k != "tasks"}, indent=1))
-    server.stop()
+    return meta
+
+
+def main() -> None:
+    t0 = time.time()
+    data_dir, model_dir, wheelhouse = locate_inputs()
+    install_wheelhouse(wheelhouse)
+    unpack_bundle()
+    ev = load_eval_section()
+    server, models, adapters, gpus = start_server(model_dir)
+    t_server = time.time()
+    status = "crashed"
+    try:
+        from google.adk.agents.context_cache_config import ContextCacheConfig
+        from google.adk.apps._configs import EventsCompactionConfig
+        from swegemma.config import EvalConfig, build_submission_limits
+        from swegemma.evaluate import Evaluator
+
+        limits, gen_constraints = build_submission_limits()
+        turns = ev.get("max_turns", ev.get("max_llm_calls"))
+        config = EvalConfig(
+            tasks_path=data_dir / "tasks.jsonl", snapshots_dir=data_dir / "snapshots",
+            results_dir=RESULTS_DIR, submission_dir=AGENT_DIR, models=models, sandbox="subprocess",
+            timeout_seconds=int(ev.get("timeout_seconds", 300)),
+            max_time_minutes=float(ev.get("max_time_minutes", 60.0)),
+            max_tool_calls=int(ev.get("max_tool_calls", 100)),
+            max_turns=int(turns) if turns is not None else None,
+            limits=limits, generation_constraints=gen_constraints, adapter_manifest=adapters,
+            context_cache_config=ContextCacheConfig(min_tokens=2048, ttl_seconds=1800, cache_intervals=10),
+            # Scorer values per HARNESS_README section 7.2.
+            events_compaction_config=EventsCompactionConfig(compaction_interval=5, overlap_size=2,
+                                                            token_threshold=14336, event_retention_size=5),
+            graph_dir=str(data_dir / "graphs"), embeddings_dir=str(data_dir / "embeddings"),
+            wheels_dir=data_dir / "wheels", task_ids=TASK_IDS, concurrency=CONCURRENCY,
+            display_mode="quiet", verbose=False,
+        )
+        asyncio.run(Evaluator(config).run())
+        status = "complete"
+    finally:
+        write_run_meta(gpus, ev, t_server - t0, time.time() - t_server, status)
+        server.stop()
 
 
 if __name__ == "__main__":
