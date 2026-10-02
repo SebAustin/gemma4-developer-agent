@@ -18,6 +18,7 @@ from .package import bundle_hash, package_bundle
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE = ROOT / "kaggle" / "eval_kernel" / "run_eval.py"
 ORACLE_TEMPLATE = ROOT / "kaggle" / "eval_kernel" / "run_oracle.py"
+SUBMISSION_TEMPLATE = ROOT / "kaggle" / "eval_kernel" / "make_submission.py"
 MAX_EMBEDDED_BYTES = 5 * 1024 * 1024  # adapters must go through a Kaggle dataset instead
 
 
@@ -100,6 +101,30 @@ def render_oracle_kernel(bundle: str | Path, task_ids: list[str], *, out_root: s
         "enable_gpu": False, "enable_tpu": False, "enable_internet": False,
         "dataset_sources": ["metric/gemma-4-developer-agent-wheelhouse"],
         "competition_sources": ["gemma-4-developer-agent"], "model_sources": [], "kernel_sources": [],
+    }
+    (out_dir / "kernel-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+    return out_dir
+
+
+def render_submission_kernel(bundle: str | Path, *, out_root: str | Path = ROOT / "kaggle" / "runs",
+                             username: str | None = None) -> Path:
+    """CPU kernel that outputs submission.zip; code competitions only accept kernel outputs."""
+    bundle = Path(bundle)
+    out_dir = Path(out_root) / "g4-submission"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    zip_path = package_bundle(bundle, out_dir / "bundle.zip")
+    payload = zip_path.read_bytes()
+    zip_path.unlink()
+    script = SUBMISSION_TEMPLATE.read_text(encoding="utf-8")
+    script = script.replace("__G4_BUNDLE_B64__", base64.b64encode(payload).decode())
+    script = script.replace("__G4_BUNDLE_HASH__", bundle_hash(bundle))
+    (out_dir / "make_submission.py").write_text(script, encoding="utf-8")
+    metadata = {
+        "id": f"{username or kaggle_username()}/g4-submission", "title": "g4-submission",
+        "code_file": "make_submission.py", "language": "python", "kernel_type": "script", "is_private": True,
+        "enable_gpu": False, "enable_tpu": False, "enable_internet": False,
+        "dataset_sources": [], "competition_sources": ["gemma-4-developer-agent"], "model_sources": [],
+        "kernel_sources": [],
     }
     (out_dir / "kernel-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     return out_dir

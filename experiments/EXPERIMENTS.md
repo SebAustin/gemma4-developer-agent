@@ -14,5 +14,8 @@ Every run is identified by its bundle hash (`g4 package` prints it) and a frozen
 | | v1_scaffold | | dev30 | 4 | | | | swe skill + workflow prompt, 5 min / 40 calls |
 
 ## Leaderboard submissions
-| date | bundle hash | public LB | notes |
-|---|---|---|---|
+Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bundle>`, push it, then `kaggle competitions submit gemma-4-developer-agent -k sebmontreal/g4-submission -f submission.zip -v <N>`.
+
+| date | ref | bundle hash | public LB | notes |
+|---|---|---|---|---|
+| 2026-10-02 | 56783164 | 9c208aa2c19a | pending | v1_scaffold: swe skill + red/green workflow, 5 min / 40 calls; not yet GPU-tested |

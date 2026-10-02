@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from .kaggle_ops import render_kernel, render_oracle_kernel
+from .kaggle_ops import render_kernel, render_oracle_kernel, render_submission_kernel
 from .package import PackagingError, bundle_hash, package_bundle
 from .splits import write_splits
 from .validate import validate_bundle
@@ -57,6 +57,12 @@ def _cmd_oracle_kernel(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_submission_kernel(args: argparse.Namespace) -> int:
+    out = render_submission_kernel(args.bundle)
+    print(f"submission kernel rendered in {out}\npush with: kaggle kernels push -p {out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="g4")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -89,6 +95,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--split", default="full")
     p.add_argument("--splits", default=str(ROOT / "experiments" / "splits.json"))
     p.set_defaults(func=_cmd_oracle_kernel)
+
+    p = sub.add_parser("submission-kernel", help="render a CPU kernel that outputs submission.zip")
+    p.add_argument("bundle")
+    p.set_defaults(func=_cmd_submission_kernel)
 
     args = parser.parse_args(argv)
     return args.func(args)
