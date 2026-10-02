@@ -1,23 +1,25 @@
 ---
 name: swe
-description: Fast repository navigation, targeted test running and a pre-submit patch check for fixing issues in the Python repo at /workspace. Scripts print compact, ranked results.
+description: Repository navigation, targeted tests and pre-submit patch check for the Python repo at /workspace. Load for script options beyond the call table in your instructions.
 ---
-# swe: repository tools
+# swe scripts: options
 
-Call scripts directly with `run_skill_script` and `skill_name="swe"`. Pass arguments as a list of strings in `args`. Every script searches the repository at /workspace and never modifies it.
+Every script reads /workspace, leaves it unchanged, and keeps its output compact. Call with run_skill_script, skill_name "swe", and args as a list of strings, e.g. `args: ["Console.print"]`.
 
-| Goal | file_path | args example |
-|---|---|---|
-| Rank files relevant to the issue | `scripts/locate.py` | `["APIRouter include_router prefix dependencies"]` |
-| Definition and usages of a symbol | `scripts/symbol.py` | `["Console.print"]` |
-| Structure of a file (classes/functions with line ranges) | `scripts/outline.py` | `["src/pkg/module.py"]` |
-| Numbered source of one symbol | `scripts/outline.py` | `["src/pkg/module.py", "--symbol", "Class.method"]` |
-| Regex search, grouped by file | `scripts/grep.py` | `["def get_\\w+", "--path", "src"]` or `["exact text", "--fixed"]` |
-| Tests related to a source file or symbol | `scripts/tests.py` | `["find", "src/pkg/module.py"]` |
-| Run specific tests, compact summary | `scripts/tests.py` | `["run", "tests/test_module.py", "-k", "keyword"]` |
-| Pre-submit check of the diff | `scripts/check_patch.py` | `[]` |
+## scripts/locate.py TEXT... [--tests] [--top N]
+Ranks source files by relevance to free text: identifiers, dotted names, backticked code, error messages. A file scores highest when it *defines* a symbol named in the text. Issue-template boilerplate and URLs are ignored. Test files are excluded unless you pass `--tests`. Output: score, path, and `[def name@line]` hits.
 
-Notes
-- `locate.py` accepts free text: paste the key identifiers, error message and quoted strings from the issue.
-- `tests.py run` refuses to run the whole suite; always give test files or node ids such as `tests/test_x.py::test_name`.
-- `check_patch.py` reports BLOCKING problems (syntax errors, scratch files that would leak into the patch, empty diff). Fix them before calling `submit_patch`.
+## scripts/symbol.py NAME [--refs N]
+NAME may be `func`, `Class`, `Class.method` or a dotted suffix. Prints the definitions (file:line, signature, line range, first docstring line), then reference lines grouped by file, with source and tests listed separately.
+
+## scripts/outline.py FILE [--symbol NAME]
+Without `--symbol`, prints the classes and functions with line ranges, so you can pick read_file ranges. With `--symbol Class.method`, prints that symbol's numbered source, up to 200 lines.
+
+## scripts/grep.py PATTERN [--path DIR] [--all-files] [-i] [--fixed] [--no-tests]
+Python regex, run over .py files by default (`--all-files` adds docs and config). Use `--fixed` for literal text containing regex characters. Results are grouped by file, with up to 8 lines each.
+
+## scripts/tests.py find TARGET | run TEST... [-k EXPR] [--timeout S]
+`find` ranks the test files that mention a source file, module or symbol. `run` takes test files or node ids (`tests/test_x.py::test_y`) and prints the pytest summary line, the failed tests and short tracebacks. It accepts specific targets only.
+
+## scripts/check_patch.py [--full]
+Shows the diff exactly as submit_patch will capture it. BLOCKING items must be fixed first: an empty patch, a syntax error, or a scratch file inside /workspace. WARNING items explain what the grader discards, such as edits to test and config files. Prints OK when the patch is ready.
