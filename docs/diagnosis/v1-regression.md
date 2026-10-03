@@ -38,3 +38,12 @@ A differential run of `sample_baseline` vs `v1_scaffold` on `dev30` with Kaggle 
 - If true, this also explains part of LB 0.08: a scorer server that hangs mid-run leaves the remaining tasks without patches, and v1's longer, test-running tasks reach it sooner.
 - The working tasks also show the progress problem (hypothesis 2): 8–35 steps in 5 minutes, often without an edit.
 - Probe 3: a `[DEBUG-mon]` monitor thread logging `free -m`, vLLM processes, GPU memory, `/health` and dmesg OOM lines every 20 s.
+
+## Loop result 3 (2026-10-03, same config as run 2, plus `[DEBUG-mon]`)
+- **No hang:** all 30 tasks got responses, `/health` was 200 in all 115 samples, and free host RAM never dropped below about 171 GB.
+- **Host OOM is falsified**, so the hang is intermittent (2 of 3 runs). Remaining suspect: an agent command in the subprocess sandbox (which shares the host with vLLM) killing vLLM's processes, e.g. `pkill python` to stop a server it started.
+  - Run 3 logs contain no kill commands. The run 1–2 outputs were overwritten (Kaggle serves only the latest version's output), so that can't be checked yet.
+- **The scorer runs Docker sandboxes** (HARNESS_README 3.1: 4 GiB / 2 vCPU per container), so this hang most likely affects only our dev kernel, not LB scoring.
+- **v1 resolved 5/30** (ceiling 18). The baseline's only hang-free run resolved 0/30.
+- On the LB, 0.08 vs 0.12 on ~60 tasks is about 5 vs 7 resolved, within noise. **The "regression" is not established.**
+- Next: the watchdog flags hangs in `run_meta.json` (`server_hang_at`). Re-run the baseline and v2_fast under run 3's config, keeping each run's outputs in timestamped folders.

@@ -58,6 +58,7 @@ def test_run_meta_reports_partial_results(kernel):
     assert meta["status"] == "crashed" and meta["n_finished"] == 2 and meta["n_tasks"] == 3
     assert meta["resolved"] == 1 and meta["resolution_rate"] == round(1 / 3, 4)
     assert meta["tasks"][1]["error"] == "budget exhausted"
+    assert meta["server_hang_at"] is None  # set only by the watchdog
 
 
 def test_run_meta_without_any_finished_task(kernel):

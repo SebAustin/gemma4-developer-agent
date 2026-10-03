@@ -133,9 +133,14 @@ def load_eval_section() -> dict:
     return raw.get("evaluation", raw)
 
 
-def start_monitor(interval_s: int = 20) -> None:
-    """[DEBUG-mon] Log host memory, vLLM processes, GPU memory and /health every interval_s.
-    Diagnoses the silent server hang after ~10-15 min (docs/diagnosis/v1-regression.md)."""
+SERVER_HANG = {"first_seen": None}  # set by the monitor; reported in run_meta.json
+
+
+def start_monitor(server, interval_s: int = 20, stale_s: int = 120) -> None:
+    """Watchdog: log host memory, vLLM processes, GPU memory and /health every interval_s, and
+    flag a server hang (the vLLM log has not grown for stale_s and /health fails, or the log is
+    stale while the engine reported running requests). An intermittent silent hang was seen in
+    2 of 3 dev runs; see docs/diagnosis/v1-regression.md."""
     import threading
     import urllib.request
 
@@ -157,11 +162,23 @@ def start_monitor(interval_s: int = 20) -> None:
         return (f"=== {time.strftime('%H:%M:%S')} health={health}\n{mem[1] if len(mem) > 1 else mem}\n"
                 f"{gpu}\n{procs}\n{('OOM: ' + oom) if oom else ''}\n")
 
+    log_path = Path(getattr(server, "log_path", "") or "/nonexistent")
+
+    def check_hang(report: str) -> None:
+        if SERVER_HANG["first_seen"] or not log_path.exists():
+            return
+        stale = time.time() - log_path.stat().st_mtime > stale_s
+        if stale and ("health=200" not in report or "Running: 0 reqs" not in log_path.read_text(errors="replace")[-400:]):
+            SERVER_HANG["first_seen"] = time.strftime("%H:%M:%S")
+            print(f"[watchdog] inference server appears hung since {SERVER_HANG['first_seen']}", flush=True)
+
     def loop() -> None:
         while True:
             try:
+                report = sample()
+                check_hang(report)
                 with out.open("a") as f:
-                    f.write(sample())
+                    f.write(report)
             except Exception as e:  # noqa: BLE001
                 with out.open("a") as f:
                     f.write(f"monitor error: {e}\n")
@@ -195,7 +212,7 @@ def write_run_meta(gpus: int, ev: dict, setup_s: float, eval_s: float, status: s
     meta = {
         "run_name": RUN_NAME, "status": status, "n_tasks": len(TASK_IDS), "n_finished": len(tasks),
         "concurrency": CONCURRENCY, "gpus": gpus, "eval_config": ev, "setup_s": round(setup_s, 1),
-        "eval_s": round(eval_s, 1), "resolved": resolved,
+        "eval_s": round(eval_s, 1), "server_hang_at": SERVER_HANG["first_seen"], "resolved": resolved,
         "resolution_rate": round(resolved / max(1, len(TASK_IDS)), 4), "tasks": tasks,
     }
     (WORKING_DIR / "run_meta.json").write_text(json.dumps(meta, indent=1))
@@ -210,7 +227,7 @@ def main() -> None:
     unpack_bundle()
     ev = load_eval_section()
     server, models, adapters, gpus = start_server(model_dir)
-    start_monitor()
+    start_monitor(server)
     t_server = time.time()
     status = "crashed"
     try:
