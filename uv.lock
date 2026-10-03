@@ -38,7 +38,7 @@ dependencies = [
     { name = "rich" },
 ]
 wheels = [
-    { filename = "adk_eval_core-0.1.0-py3-none-any.whl", hash = "sha256:b1608c4471a2739eca6469735e4e118ff33a20823ce9430719238ea843aa9d1a" },
+    { filename = "adk_eval_core-0.1.0-py3-none-any.whl", hash = "sha256:194dd8f9aab154857bfa0db9d9ec382db856ee124529e072509634d3071d8643" },
 ]
 
 [package.metadata]
@@ -59,15 +59,15 @@ provides-extras = ["scoring", "dev"]
 
 [[package]]
 name = "adk-submission"
-version = "0.2.11"
-source = { path = "vendor/wheelhouse/adk_submission-0.2.11-py3-none-any.whl" }
+version = "0.2.12"
+source = { path = "vendor/wheelhouse/adk_submission-0.2.12-py3-none-any.whl" }
 dependencies = [
     { name = "google-adk" },
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
 wheels = [
-    { filename = "adk_submission-0.2.11-py3-none-any.whl", hash = "sha256:d14f7d31e724f507322c763bc7c1ed56ac603085b3709afed954e50006b494a8" },
+    { filename = "adk_submission-0.2.12-py3-none-any.whl", hash = "sha256:077c438c426e625b9f722081694e1d32856e6f7e932ef625002fc4a11aabdc10" },
 ]
 
 [package.metadata]
@@ -591,7 +591,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "adk-eval-core", path = "vendor/wheelhouse/adk_eval_core-0.1.0-py3-none-any.whl" },
-    { name = "adk-submission", path = "vendor/wheelhouse/adk_submission-0.2.11-py3-none-any.whl" },
+    { name = "adk-submission", path = "vendor/wheelhouse/adk_submission-0.2.12-py3-none-any.whl" },
     { name = "google-adk", specifier = "==1.36.1" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
@@ -2563,7 +2563,7 @@ dependencies = [
     { name = "transformers" },
 ]
 wheels = [
-    { filename = "swegemma-0.2.7-py3-none-any.whl", hash = "sha256:2b74d402dc95a615f3b36c56fd3f9ba11ddbfb7db8a5a32ec259369a0f559d98" },
+    { filename = "swegemma-0.2.7-py3-none-any.whl", hash = "sha256:27a2f60f8db46c8fef5defc16df722dac0402446c9a6252e7e6b4c280e843c81" },
 ]
 
 [package.metadata]

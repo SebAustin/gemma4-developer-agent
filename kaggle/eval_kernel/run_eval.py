@@ -114,8 +114,13 @@ def start_server(model_dir: Path):
         model=str(model_dir), port=8000, host="127.0.0.1",
         tool_call_parser="gemma4", reasoning_parser="gemma4", max_model_len=32768,
         dtype="bfloat16", gpu_memory_utilization=GPU_MEMORY_UTILIZATION, enable_auto_tool_choice=True,
-        enable_lora=True, max_loras=8, max_lora_rank=128,
+        # max_loras / max_lora_rank left to the harness defaults (adk_submission >= 0.2.12: one slot,
+        # rank inferred from the adapters). Explicit 8 x 128 made the sampler warm-up OOM at 0.80.
+        enable_lora=True,
         tensor_parallel_size=4 if gpus >= 4 else (2 if gpus >= 2 else 1), startup_timeout=60 * 20,
+        # Dev runs never exceed CONCURRENCY parallel requests; vLLM's default (256) makes the sampler
+        # warm-up OOM at 0.80 once LoRA buffers are allocated (sample bundle, 2026-10-03).
+        extra_args=["--max-num-seqs", str(max(8, 2 * CONCURRENCY))],
     )
     server = VllmServer(cfg, adapter_manifest=adapters)
     server.start()

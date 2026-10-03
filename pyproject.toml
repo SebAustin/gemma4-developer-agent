@@ -22,7 +22,7 @@ g4 = "g4agent.cli:main"
 # Harness wheels are not on PyPI; fetch them with scripts/fetch_harness.sh (Kaggle dataset
 # metric/gemma-4-developer-agent-wheelhouse) into vendor/wheelhouse/.
 swegemma = { path = "vendor/wheelhouse/swegemma-0.2.7-py3-none-any.whl" }
-adk-submission = { path = "vendor/wheelhouse/adk_submission-0.2.11-py3-none-any.whl" }
+adk-submission = { path = "vendor/wheelhouse/adk_submission-0.2.12-py3-none-any.whl" }
 adk-eval-core = { path = "vendor/wheelhouse/adk_eval_core-0.1.0-py3-none-any.whl" }
 
 [build-system]

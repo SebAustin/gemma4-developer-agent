@@ -39,3 +39,9 @@ Source: `swegemma 0.2.7`, `adk_submission 0.2.11`, `adk_eval_core 0.1.0` and `go
 - With `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1` (set by the official notebook), `gpu_memory_utilization=0.80` behaves like about 0.62. Enabling LoRA (`max_loras=8`, `max_lora_rank=128`) then leaves a negative KV-cache budget on 4x L4: "No available memory for the cache blocks", seen 2026-09-28 with the sample bundle.
 - The eval kernel therefore copies the official notebook (0.90). That leaves roughly 1.8 GiB of KV cache per GPU.
 - **Risk:** HARNESS_README says the scorer uses 0.80 with the same LoRA settings. The sample (LoRA) bundle does score on the leaderboard, so the scorer evidently starts. Still, before submitting our own LoRA bundle, verify it on a scorer-identical config, and keep adapter rank small.
+
+## Harness republished 2026-09-30 (same swegemma 0.2.7 version, adk_submission 0.2.12)
+- Tools now return dicts at the ADK boundary. `VllmConfig` gained `reasoning_config`: for the `gemma4` parser it defaults to Gemma 4 channel tokens, which **enables vLLM's thinking-token budget**, so `thinking_budget` is now enforced.
+- New default `scheduler_reserve_full_isl=False` (Gemma 4 requests no longer stall in the waiting queue). LoRA defaults are now `max_loras=1` with the rank inferred from the adapters.
+- `scripts/fetch_harness.sh` always re-downloads, because wheels get republished under the same version.
+- 2026-10-03: Kaggle's default Docker image moved to Python 3.13, which breaks the cp312 wheelhouse. Kernels pin the official notebook's image (`kaggle_ops.KAGGLE_DOCKER_IMAGE`).

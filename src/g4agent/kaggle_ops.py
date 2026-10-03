@@ -17,6 +17,9 @@ from .package import bundle_hash, package_bundle
 
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE = ROOT / "kaggle" / "eval_kernel" / "run_eval.py"
+# Image of the official Getting-Started notebook. The wheelhouse holds cp312 wheels; Kaggle's default
+# image moved to Python 3.13 on 2026-10-03 and broke unpinned kernels.
+KAGGLE_DOCKER_IMAGE = "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461"
 ORACLE_TEMPLATE = ROOT / "kaggle" / "eval_kernel" / "run_oracle.py"
 SUBMISSION_TEMPLATE = ROOT / "kaggle" / "eval_kernel" / "make_submission.py"
 MAX_EMBEDDED_BYTES = 5 * 1024 * 1024  # adapters must go through a Kaggle dataset instead
@@ -65,6 +68,7 @@ def render_kernel(bundle: str | Path, task_ids: list[str], run_name: str, *, con
         "enable_tpu": False,
         "enable_internet": False,
         "machine_shape": "NvidiaL4",
+        "docker_image": KAGGLE_DOCKER_IMAGE,
         "dataset_sources": ["metric/gemma-4-developer-agent-wheelhouse"],
         "competition_sources": ["gemma-4-developer-agent"],
         "model_sources": ["google/gemma-4/Other/gemma-4-31b-it-qat-w4a16-ct/2"],
@@ -98,7 +102,7 @@ def render_oracle_kernel(bundle: str | Path, task_ids: list[str], *, out_root: s
     metadata = {
         "id": f"{username or kaggle_username()}/g4-oracle-kaggle-env", "title": "g4-oracle-kaggle-env",
         "code_file": "run_oracle.py", "language": "python", "kernel_type": "script", "is_private": True,
-        "enable_gpu": False, "enable_tpu": False, "enable_internet": False,
+        "enable_gpu": False, "enable_tpu": False, "enable_internet": False, "docker_image": KAGGLE_DOCKER_IMAGE,
         "dataset_sources": ["metric/gemma-4-developer-agent-wheelhouse"],
         "competition_sources": ["gemma-4-developer-agent"], "model_sources": [], "kernel_sources": [],
     }
