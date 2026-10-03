@@ -20,3 +20,11 @@ A differential run of `sample_baseline` vs `v1_scaffold` on `dev30` with Kaggle 
    - *Prediction:* v1 traces contain `run_skill_script` responses with `error_code`.
 5. **Patch hygiene.** Edits land in test, config or scratch files, which the grader discards.
    - *Prediction:* v1 patches touch protected paths more often than baseline patches.
+
+## Loop result 1 (2026-10-03, dev30, conc. 4, gpu_mem 0.90 + VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1)
+- baseline 0/30, v1 0/30, and **every task hit the session timeout** in both runs.
+- v1: the first 8 tasks (two waves of 4) acted normally, at 15–40 s per turn and 60–345k prompt tokens per task. **From about 600 s into serving, all 22 later tasks got zero model responses** (`total_prompt_tokens: 0`), with no API errors or retries in the kernel log.
+- The baseline's whole evaluation took 517 s, under that point. Its 1-minute budget still timed out every task (about 4–10 agent steps each).
+- Reading: the inference server stops answering after about 10 minutes of v1-sized load, so the dev numbers are invalid past that point.
+- This does not yet explain LB 0.08, because the scorer runs its own server, presumably at 0.80.
+- Next probe: keep the vLLM log (`vllm_server.log`) and run the scorer-documented memory config (0.80, no profiler env var).

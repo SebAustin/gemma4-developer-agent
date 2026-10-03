@@ -2,7 +2,7 @@
 
 Rendered by `g4 kernel` (src/g4agent/kaggle_ops.py), which replaces the __G4_*__ placeholders.
 Mirrors the official "Getting Started" notebook (wheelhouse install -> VllmServer -> Evaluator),
-with vLLM settings matching the official notebook (see GPU_MEMORY_UTILIZATION; max_model_len 32768).
+with vLLM settings matching the scorer documented in HARNESS_README (see GPU_MEMORY_UTILIZATION).
 Outputs /kaggle/working/results/** and /kaggle/working/run_meta.json.
 """
 
@@ -28,7 +28,6 @@ os.environ.update({
     "LITELLM_LOCAL_MODEL_COST_MAP": "True",
     "TRANSFORMERS_NO_TF": "1",
     "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
-    "VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS": "1",
     "VLLM_ENGINE_READY_TIMEOUT_S": "1200",
     "VLLM_NO_USAGE_STATS": "1",
     "OTEL_SDK_DISABLED": "true",
@@ -41,9 +40,10 @@ DEFAULT_WHEELHOUSE_DIR = Path("/kaggle/input/datasets/metric/gemma-4-developer-a
 DEFAULT_DATA_DIRS = (Path("/kaggle/input/competitions/gemma-4-developer-agent"),
                      Path("/kaggle/input/gemma-4-developer-agent"))
 DEFAULT_MODEL_DIR = Path("/kaggle/input/models/google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2")
-# Same as the official Getting-Started notebook. With VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1,
-# 0.80 behaves like ~0.62 and enabling LoRA (8 slots, rank 128) leaves no KV cache on 4x L4.
-GPU_MEMORY_UTILIZATION = 0.90
+# Scorer value per HARNESS_README 3.1. The official notebook's VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1
+# makes 0.80 behave like ~0.62 (no KV cache once LoRA is enabled), so this kernel leaves it unset.
+# See docs/diagnosis/v1-regression.md: with 0.90 + that variable, the server stopped answering after ~10 min.
+GPU_MEMORY_UTILIZATION = 0.80
 WORKING_DIR = Path("/kaggle/working")
 AGENT_DIR = WORKING_DIR / "bundle"
 RESULTS_DIR = WORKING_DIR / "results"
@@ -133,6 +133,19 @@ def load_eval_section() -> dict:
     return raw.get("evaluation", raw)
 
 
+def keep_server_log(server) -> None:
+    """Copy the inference server's log (a temp file) into the outputs and echo its capacity lines."""
+    log_path = getattr(server, "log_path", None)
+    if not log_path or not Path(log_path).exists():
+        print("server log not found")
+        return
+    text = Path(log_path).read_text(errors="replace")
+    (WORKING_DIR / "vllm_server.log").write_text(text)
+    keys = ("KV cache", "Maximum concurrency", "Available KV", "Error", "error", "Traceback", "OOM", "preempt")
+    lines = [ln for ln in text.splitlines() if any(k in ln for k in keys)]
+    print("\n".join(lines[:40]) or "no capacity/error lines in server log")
+
+
 def write_run_meta(gpus: int, ev: dict, setup_s: float, eval_s: float, status: str) -> dict:
     """Summarize from the harness's append-only task_results.jsonl, so a crashed or timed-out
     run still reports every task that finished."""
@@ -190,6 +203,7 @@ def main() -> None:
         status = "complete"
     finally:
         write_run_meta(gpus, ev, t_server - t0, time.time() - t_server, status)
+        keep_server_log(server)
         server.stop()
 
 
