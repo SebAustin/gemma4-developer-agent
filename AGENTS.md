@@ -13,3 +13,6 @@ Read `docs/HARNESS_NOTES.md` when you touch prompts, skills, eval kernels or dep
 
 ## Actions that need the user's go-ahead
 Kaggle kernel pushes (they spend the weekly GPU quota), competition submissions (1 per day) and new Kaggle datasets.
+
+## Domain model
+`CONTEXT.md` is the glossary (use its terms); decisions live in `docs/adr/`.
