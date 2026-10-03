@@ -18,4 +18,4 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
-| 2026-10-02 | 56783164 | 9c208aa2c19a | pending | v1_scaffold: swe skill + red/green workflow, 5 min / 40 calls; not yet GPU-tested |
+| 2026-10-02 | 56783164 | 9c208aa2c19a | **0.08** | v1_scaffold: swe skill + red/green workflow, 5 min / 40 calls; below sample (~0.12), see docs/diagnosis/v1-regression.md |
