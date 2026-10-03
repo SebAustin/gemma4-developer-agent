@@ -133,6 +133,43 @@ def load_eval_section() -> dict:
     return raw.get("evaluation", raw)
 
 
+def start_monitor(interval_s: int = 20) -> None:
+    """[DEBUG-mon] Log host memory, vLLM processes, GPU memory and /health every interval_s.
+    Diagnoses the silent server hang after ~10-15 min (docs/diagnosis/v1-regression.md)."""
+    import threading
+    import urllib.request
+
+    out = WORKING_DIR / "monitor.log"
+
+    def sample() -> str:
+        mem = subprocess.run(["free", "-m"], capture_output=True, text=True).stdout.splitlines()
+        procs = subprocess.run("ps -eo pid,rss,stat,comm,args --sort=-rss | grep -iE 'vllm|python' | grep -v grep | head -8",
+                               shell=True, capture_output=True, text=True).stdout.strip()
+        gpu = subprocess.run(["nvidia-smi", "--query-gpu=index,memory.used,utilization.gpu",
+                              "--format=csv,noheader"], capture_output=True, text=True).stdout.strip()
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=5) as r:
+                health = str(r.status)
+        except Exception as e:  # noqa: BLE001 - any failure is the signal we are looking for
+            health = f"ERR {type(e).__name__}"
+        oom = subprocess.run("dmesg 2>/dev/null | grep -iE 'killed process|out of memory' | tail -3",
+                             shell=True, capture_output=True, text=True).stdout.strip()
+        return (f"=== {time.strftime('%H:%M:%S')} health={health}\n{mem[1] if len(mem) > 1 else mem}\n"
+                f"{gpu}\n{procs}\n{('OOM: ' + oom) if oom else ''}\n")
+
+    def loop() -> None:
+        while True:
+            try:
+                with out.open("a") as f:
+                    f.write(sample())
+            except Exception as e:  # noqa: BLE001
+                with out.open("a") as f:
+                    f.write(f"monitor error: {e}\n")
+            time.sleep(interval_s)
+
+    threading.Thread(target=loop, daemon=True).start()
+
+
 def keep_server_log(server) -> None:
     """Copy the inference server's log (a temp file) into the outputs and echo its capacity lines."""
     log_path = getattr(server, "log_path", None)
@@ -173,6 +210,7 @@ def main() -> None:
     unpack_bundle()
     ev = load_eval_section()
     server, models, adapters, gpus = start_server(model_dir)
+    start_monitor()
     t_server = time.time()
     status = "crashed"
     try:

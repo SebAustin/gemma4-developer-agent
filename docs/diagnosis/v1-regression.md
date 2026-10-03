@@ -28,3 +28,13 @@ A differential run of `sample_baseline` vs `v1_scaffold` on `dev30` with Kaggle 
 - Reading: the inference server stops answering after about 10 minutes of v1-sized load, so the dev numbers are invalid past that point.
 - This does not yet explain LB 0.08, because the scorer runs its own server, presumably at 0.80.
 - Next probe: keep the vLLM log (`vllm_server.log`) and run the scorer-documented memory config (0.80, no profiler env var).
+
+## Loop result 2 (2026-10-03, dev30, conc. 4, scorer config: gpu_mem 0.80, no profiler env var)
+- v1 resolved 1/30 (fastapi_14301). KV cache usage stayed at 10–17%, so **KV memory is falsified as the cause**.
+- Same failure shape as before, just later. Three waves (12 tasks) worked, then from about 900 s every task got zero responses.
+- `vllm_server.log` stops at 19:41:51 mid-flight (Running: 4 reqs), with no error and no shutdown. In run 1 the process was still alive at the end ("did not terminate within 10.0s"), so this is a **silent engine hang**, not a crash.
+- New top hypothesis: **host-RAM pressure.** Sandboxes run pytest and repo code beside vLLM; the OOM killer takes one tensor-parallel worker and the others block forever.
+  - *Prediction:* free memory goes to ~0 and a vLLM worker disappears just before the hang.
+- If true, this also explains part of LB 0.08: a scorer server that hangs mid-run leaves the remaining tasks without patches, and v1's longer, test-running tasks reach it sooner.
+- The working tasks also show the progress problem (hypothesis 2): 8–35 steps in 5 minutes, often without an edit.
+- Probe 3: a `[DEBUG-mon]` monitor thread logging `free -m`, vLLM processes, GPU memory, `/health` and dmesg OOM lines every 20 s.
