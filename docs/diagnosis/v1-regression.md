@@ -47,3 +47,12 @@ A differential run of `sample_baseline` vs `v1_scaffold` on `dev30` with Kaggle 
 - **v1 resolved 5/30** (ceiling 18). The baseline's only hang-free run resolved 0/30.
 - On the LB, 0.08 vs 0.12 on ~60 tasks is about 5 vs 7 resolved, within noise. **The "regression" is not established.**
 - Next: the watchdog flags hangs in `run_meta.json` (`server_hang_at`). Re-run the baseline and v2_fast under run 3's config, keeping each run's outputs in timestamped folders.
+
+## Conclusion (2026-10-03)
+- **The "v1 regression" is not supported.** Under identical dev conditions the sample resolves 0/30, v1 5/30 and v2_fast 6/30. LB 0.08 vs 0.12 is ±2 tasks on ~60, and the sample's 1-minute budget does much better when turns are faster, as on the scorer.
+- **Real defects found and fixed along the way:**
+  - The kernel memory config, plus the harness's LoRA defaults.
+  - An unpinned Docker image.
+  - A silent vLLM hang (2 of 3 early runs). The harness's 2026-09-30 scheduler fix (`scheduler_reserve_full_isl=False`) is the likely cause. The watchdog now reports any recurrence.
+  - Progress speed: edit-early (v2_fast) raises the patch rate from 14 to 19 of 30.
+- The `[DEBUG-mon]` instrumentation became a permanent, documented watchdog; there are no tagged debug logs left (`grep DEBUG- kaggle/` returns nothing).
