@@ -19,9 +19,21 @@ All three runs: Kaggle env (ceiling 18/30), scorer memory config (0.80), no serv
 ## Leaderboard submissions
 Dev30 does not predict the LB so far: dev ranks v2_fast > v1 > sample, the LB ranks sample (~0.12) > v1 (0.08) > v2_fast (0.06). Each LB step is only 1–2 tasks on ~60, but both of our submissions trail the sample. Next: LB ablations of our biggest design choices, one per day.
 
+### LB ablation plan (one factor per submission)
+Our bundles differ from the sample in four ways: tooling (swe skill), prompt/workflow, budget (5 min / 40 calls vs 1 min / 10) and sampling (thinking 1536 / output 6144 / temp 0.3 vs 4096 / 16384 / 0.2).
+
+| order | bundle | parent | single change | answers |
+|---|---|---|---|---|
+| 1 (submitted 10-05) | `v2_noskill` | v2_fast | swe skill → shell commands | does the skill hurt on private repos? |
+| 2 | `v2_think4k` | v2_fast | sample sampling settings | does our short thinking budget hurt (now enforced by the harness)? |
+| 3 | `sample_5min` | sample | 5 min / 40 calls budget | does a longer budget help the sample's prompt? |
+
+Read each result against its parent. LB noise is about ±2 tasks (±0.03), so a gap under 0.04 counts as "no effect". Combine the winners of each factor into the next candidate.
+
 Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bundle>`, push it, then `kaggle competitions submit gemma-4-developer-agent -k sebmontreal/g4-submission -f submission.zip -v <N>`. Wait for version N's own run to finish (the status call may still show the previous version's COMPLETE), and check that its log prints the expected bundle hash.
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
+| 2026-10-05 | 56836396 | 64e7add9e296 | pending | v2_noskill: v2_fast without the swe skill |
 | 2026-10-03 | 56810022 | 0028c7312dfe | **0.06** | v2_fast: edit by 6th call, 5 min / 40 calls; dev30 6/30 vs v1 5/30 |
 | 2026-10-02 | 56783164 | 9c208aa2c19a | **0.08** | v1_scaffold: swe skill + red/green workflow, 5 min / 40 calls; below sample (~0.12), see docs/diagnosis/v1-regression.md |
