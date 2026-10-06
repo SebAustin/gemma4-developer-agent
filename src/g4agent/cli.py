@@ -7,6 +7,7 @@ import json
 import sys
 from pathlib import Path
 
+from .compare import compare_runs, load_results
 from .kaggle_ops import render_kernel, render_oracle_kernel, render_submission_kernel
 from .package import PackagingError, bundle_hash, package_bundle
 from .splits import write_splits
@@ -33,9 +34,15 @@ def _cmd_package(args: argparse.Namespace) -> int:
 
 
 def _cmd_splits(args: argparse.Namespace) -> int:
-    splits = write_splits(args.tasks, args.out, force=args.force)
+    splits = write_splits(args.tasks, args.out, oracle_path=args.oracle, force=args.force)
     for name, ids in splits.items():
         print(f"{name:14s} {len(ids):4d} tasks")
+    return 0
+
+
+def _cmd_compare(args: argparse.Namespace) -> int:
+    result = compare_runs(load_results(args.run_a), load_results(args.run_b))
+    print(result.format(Path(args.run_a).name, Path(args.run_b).name))
     return 0
 
 
@@ -79,8 +86,15 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("splits", help="create/verify frozen dev splits")
     p.add_argument("--tasks", default=str(ROOT / "data" / "tasks.jsonl"))
     p.add_argument("--out", default=str(ROOT / "experiments" / "splits.json"))
+    p.add_argument("--oracle", default=str(ROOT / "experiments" / "oracle_kaggle.json"),
+                   help="reference-fix results; their resolvable tasks form the sound40 split")
     p.add_argument("--force", action="store_true")
     p.set_defaults(func=_cmd_splits)
+
+    p = sub.add_parser("compare", help="paired per-task comparison of two eval runs (exact McNemar)")
+    p.add_argument("run_a", help="run directory or task_results.jsonl")
+    p.add_argument("run_b")
+    p.set_defaults(func=_cmd_compare)
 
     p = sub.add_parser("kernel", help="render a Kaggle eval kernel for a bundle and split")
     p.add_argument("bundle")

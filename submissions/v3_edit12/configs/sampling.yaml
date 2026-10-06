@@ -1,0 +1,8 @@
+# Short thinking keeps each turn fast: decode throughput on 4xL4 is the binding constraint.
+temperature: 0.3
+top_p: 0.95
+top_k: 64
+max_output_tokens: 6144
+thinking_config:
+  thinking_budget: 1536
+  include_thoughts: true

@@ -1,0 +1,8 @@
+# Sampling shared by the strongest public bundles: lower temperature, no top_k, room to think.
+# max_output_tokens stays <= 8192 so prompt + output fits vLLM's 32k max_model_len.
+temperature: 0.2
+top_p: 0.95
+max_output_tokens: 8192
+thinking_config:
+  thinking_budget: 4096
+  include_thoughts: true

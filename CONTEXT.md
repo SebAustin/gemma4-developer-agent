@@ -13,7 +13,7 @@ One named bundle under comparison, e.g. `sample_baseline`, `v1_scaffold`, `v2_fa
 _Avoid_: version, model
 
 **Skill**:
-A folder of instructions and scripts shipped inside a bundle that the agent can run inside the task sandbox. Our bundles ship one, `swe`.
+A folder of instructions and scripts shipped inside a bundle that the agent can run inside the task sandbox. Only the older variants ship one (`swe`); see ADR 0005.
 _Avoid_: tool (reserved for the harness's built-in tools such as `edit_file`)
 
 **Submission**:
@@ -42,13 +42,25 @@ _Avoid_: setup, platform
 How many tasks resolve in a given environment when the agent applies the known-correct patch. It caps any agent's score in that environment.
 _Avoid_: oracle score, upper bound, max score
 
+**Sound task**:
+A task whose reference fix resolves in the Kaggle environment, so a miss on it is the agent's fault, not the environment's. The `sound40` dev split holds only sound tasks.
+_Avoid_: valid task, clean task
+
+**Verification timeout**:
+The limit on the scoring pytest run over a task's hidden test files. It is the bundle's `timeout_seconds`, the same value that caps each agent command.
+_Avoid_: test timeout, command timeout (when the scoring run is meant)
+
 **Dev split**:
 A frozen subset of the public tasks used to compare variants; scores are only comparable within one split.
 _Avoid_: dev set, validation set, sample
 
 **Dev run**:
-Evaluating one variant on one dev split, on Kaggle GPUs.
+Evaluating one variant on one dev split, on Kaggle GPUs. Since ADR 0004, dev runs are serial (concurrency 1), like the scorer.
 _Avoid_: experiment, benchmark run, eval
+
+**Paired comparison**:
+Comparing two dev runs task by task on the same split. Only the tasks one variant resolves and the other does not carry signal (`g4 compare`, exact McNemar test).
+_Avoid_: A/B test, diff of scores
 
 ## Kaggle machinery
 

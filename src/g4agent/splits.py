@@ -13,6 +13,7 @@ from collections import defaultdict
 from pathlib import Path
 
 SPLIT_SIZES = {"smoke5": 5, "dev30": 30}
+SOUND_SIZE = 40
 SIZE_BUCKETS = ((5, "xs"), (20, "s"), (80, "m"), (10**9, "l"))
 
 
@@ -59,8 +60,11 @@ def stratified_sample(tasks: list[dict], n: int) -> list[str]:
     return sorted(picked)
 
 
-def make_splits(tasks: list[dict]) -> dict[str, list[str]]:
+def make_splits(tasks: list[dict], resolvable: set[str] | None = None) -> dict[str, list[str]]:
     splits = {name: stratified_sample(tasks, size) for name, size in SPLIT_SIZES.items()}
+    if resolvable is not None:
+        # Sound tasks: the reference fix resolves them in the Kaggle env, so a miss is the agent's.
+        splits["sound40"] = stratified_sample([t for t in tasks if t["instance_id"] in resolvable], SOUND_SIZE)
     splits["full"] = sorted(t["instance_id"] for t in tasks)
     # Repo-held-out split for measuring generalization to unseen repos (the test set is
     # drawn from private repos): train on everything except rich, evaluate on rich.
@@ -68,15 +72,26 @@ def make_splits(tasks: list[dict]) -> dict[str, list[str]]:
     return splits
 
 
-def write_splits(tasks_path: str | Path, out_path: str | Path, *, force: bool = False) -> dict[str, list[str]]:
-    splits = make_splits(load_tasks(tasks_path))
+def write_splits(tasks_path: str | Path, out_path: str | Path, *, oracle_path: str | Path | None = None,
+                 force: bool = False) -> dict[str, list[str]]:
+    """Write the splits; new split names may be added, existing ones must not change."""
+    resolvable = None
+    if oracle_path is not None:
+        oracle = json.loads(Path(oracle_path).read_text(encoding="utf-8"))
+        if "resolvable" not in oracle:
+            raise ValueError(f"{oracle_path} has no 'resolvable' list (expected an oracle kernel result)")
+        resolvable = set(oracle["resolvable"])
+    splits = make_splits(load_tasks(tasks_path), resolvable)
     out = Path(out_path)
     if out.exists() and not force:
         existing = json.loads(out.read_text(encoding="utf-8"))
-        if existing != splits:
-            raise RuntimeError(f"{out} already holds different splits; pass force=True to replace them "
-                               "(this invalidates comparisons with earlier experiments)")
-        return existing
+        changed = [k for k in existing if k in splits and existing[k] != splits[k]]
+        if changed:
+            raise RuntimeError(f"{out} already holds different splits ({', '.join(changed)}); pass "
+                               "force=True to replace them (this invalidates comparisons with earlier experiments)")
+        splits = {**existing, **splits}
+        if splits == existing:
+            return existing
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(splits, indent=1) + "\n", encoding="utf-8")
     return splits

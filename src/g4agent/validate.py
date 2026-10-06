@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
+from collections.abc import Iterator
 from pathlib import Path
 
 import yaml
@@ -26,6 +27,16 @@ MAX_LORA_RANK = 128
 SESSION_STATE_KEYS = {"problem_description"}
 OPTIONAL_STATE_KEYS = {"hints"}
 PLACEHOLDER_RE = re.compile(r"{+[^{}]*}+")  # identical to google.adk.utils.instructions_utils
+# eval_config `timeout_seconds` is also the timeout of the scoring pytest run
+# (swegemma config.py -> harness.command_timeout_seconds -> harness/verification.py).
+DEFAULT_VERIFICATION_TIMEOUT = 300  # harness default for timeout_seconds
+MIN_VERIFICATION_TIMEOUT = 240
+MAX_MODEL_LEN = 32768  # scorer's vLLM max_model_len
+MAX_SAFE_OUTPUT_TOKENS = 8192
+# The scorer runs ~120 tasks one after another; its 12 h include sandbox setup, not grading.
+SCORER_TASKS = 120
+SCORER_WALL_CLOCK_HOURS = 12
+SETUP_MINUTES_PER_TASK = 1.0
 
 
 @dataclass
@@ -167,16 +178,64 @@ def _lint_adapters(bundle: Path, report: ValidationReport) -> None:
             report.errors.append(f"{cfg.parent.relative_to(bundle)}: missing adapter_model.safetensors")
 
 
+class _IncludeAsNullLoader(yaml.SafeLoader):
+    """Reads one YAML file on its own; included files are linted when the scan reaches them."""
+
+
+_IncludeAsNullLoader.add_constructor("!include", lambda loader, node: None)
+
+
+def _mappings(node: object) -> Iterator[dict]:
+    if isinstance(node, dict):
+        yield node
+        for value in node.values():
+            yield from _mappings(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _mappings(value)
+
+
+def _lint_sampling(bundle: Path, report: ValidationReport) -> None:
+    for path in sorted(bundle.rglob("*.y*ml")):
+        if path.name == "eval_config.yaml" or "skills" in path.relative_to(bundle).parts:
+            continue
+        rel = path.relative_to(bundle)
+        try:
+            data = yaml.load(path.read_text(encoding="utf-8"), Loader=_IncludeAsNullLoader)
+        except yaml.YAMLError as e:
+            report.errors.append(f"{rel}: unreadable YAML: {e}".splitlines()[0])
+            continue
+        for m in _mappings(data):
+            max_out = m.get("max_output_tokens")
+            if isinstance(max_out, int) and max_out > MAX_SAFE_OUTPUT_TOKENS:
+                report.warnings.append(f"{rel}: max_output_tokens={max_out}: vLLM rejects requests whose prompt "
+                                       f"+ max output exceed {MAX_MODEL_LEN} tokens; use <= {MAX_SAFE_OUTPUT_TOKENS}")
+            thinking = m.get("thinking_config")
+            if isinstance(thinking, dict) and thinking.get("include_thoughts") is False \
+                    and (thinking.get("thinking_budget") or 0) > 0:
+                report.warnings.append(f"{rel}: include_thoughts: false disables reasoning in the ADK bridge, "
+                                       "so thinking_budget is ignored")
+
+
 def _lint_eval_config(bundle: Path, report: ValidationReport) -> None:
     path = bundle / "eval_config.yaml"
     if not path.is_file():
         report.warnings.append("no eval_config.yaml: harness defaults apply (60 min/task, 100 tool calls)")
         return
     section = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("evaluation", {})
-    minutes = float(section.get("max_time_minutes", 60.0))
-    if minutes * 120 / 60 > 12:
-        report.warnings.append(f"max_time_minutes={minutes}: 120 serial tasks could take {minutes * 2:.1f} h "
-                               "(> 12 h limit) if the scorer runs tasks sequentially")
+    try:
+        timeout = int(section.get("timeout_seconds", DEFAULT_VERIFICATION_TIMEOUT))
+        minutes = float(section.get("max_time_minutes", 60.0))
+    except (TypeError, ValueError) as e:
+        report.errors.append(f"eval_config.yaml: timeout_seconds and max_time_minutes must be numbers ({e})")
+        return
+    if timeout < MIN_VERIFICATION_TIMEOUT:
+        report.warnings.append(f"timeout_seconds={timeout}: it also caps the scoring pytest run on the hidden "
+                               f"test files, so slow files fail correct patches; use >= {MIN_VERIFICATION_TIMEOUT}")
+    worst_hours = SCORER_TASKS * (minutes + SETUP_MINUTES_PER_TASK) / 60
+    if worst_hours > SCORER_WALL_CLOCK_HOURS:
+        report.warnings.append(f"max_time_minutes={minutes}: if every task hits the cap, {SCORER_TASKS} serial tasks "
+                               f"plus sandbox setup take {worst_hours:.1f} h (> {SCORER_WALL_CLOCK_HOURS} h limit); keep tool-call caps tight")
 
 
 def validate_bundle(bundle: str | Path) -> ValidationReport:
@@ -189,5 +248,6 @@ def validate_bundle(bundle: str | Path) -> ValidationReport:
     _lint_placeholders(bundle, report)
     _lint_skills(bundle, report)
     _lint_adapters(bundle, report)
+    _lint_sampling(bundle, report)
     _lint_eval_config(bundle, report)
     return report

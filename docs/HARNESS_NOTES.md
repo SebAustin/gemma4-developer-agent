@@ -19,7 +19,11 @@ Source: `swegemma 0.2.7`, `adk_submission 0.2.11`, `adk_eval_core 0.1.0` and `go
 - Non-identifier braces such as `{"a": 1}` are left untouched. `g4 validate` enforces all of this.
 
 ## Scoring flow facts
-- `Evaluator.run()` supports `concurrency` (asyncio semaphore; default 1). The official scorer (`scripts/inference.py`) is **not** shipped, so it is unknown whether it runs tasks concurrently. Budget per-task time as if serial: 12 h ÷ ~120 tasks ≈ 6 min.
+- The scorer runs ~120 tasks **one after another** (organizer-confirmed, per public notebooks). The 12 h include sandbox setup, not grading. 4×L4 serve one model with tensor parallelism; they are not four task workers. `Evaluator.run(concurrency=...)` exists, but the scorer does not use it.
+- **Verification timeout:** the bundle's `timeout_seconds` becomes `harness.command_timeout_seconds` (`swegemma/config.py:179`). That value caps every agent command **and** the scoring pytest run over the hidden test files (`harness/verification.py:502`), which runs whole files on a 2-vCPU sandbox. A short timeout fails correct patches; the requests test files take ~100 s locally. Default 300 s; `g4 validate` warns below 240 s.
+- vLLM serves `max_model_len` 32,768 and rejects any request whose prompt plus `max_output_tokens` exceeds it. Long tasks then die mid-run, so keep `max_output_tokens` ≤ 8192.
+- `thinking_config.include_thoughts: false` disables reasoning in the ADK→vLLM bridge, even with a positive `thinking_budget` (reported by the "Measure before you tune" notebook).
+- When the time or call budget runs out, the working tree is still diffed and graded.
 - Kaggle notebooks use `sandbox='subprocess'` because there is no Docker.
 - The docker sandbox is only for local runs (`swebench-sandbox:latest`).
 - `setup_gemma_model_registry(served_model=...)` routes all Gemma aliases to one served model. That lets us smoke-test with a small local model while keeping the competition model name in `agent.yaml`.

@@ -1,5 +1,7 @@
 # Repository tooling ships as a skill, not as prompt instructions
 
+Status: superseded by 0005 (2026-10-06).
+
 Submissions can't contain agent code, but a skill's scripts run inside the task sandbox. We put navigation, targeted testing and the pre-submit patch check into the `swe` skill, instead of only teaching shell recipes (`grep`, `find`, `pytest`) in the prompt. The reasons:
 - Skill calls are not counted against `max_tool_calls`.
 - Their output is ranked and size-capped.

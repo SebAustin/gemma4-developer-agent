@@ -53,3 +53,32 @@ def test_write_splits_refuses_silent_change(tasks, tmp_path):
     tasks_path.write_text("\n".join(json.dumps(t) for t in tasks[:50]))
     with pytest.raises(RuntimeError):
         write_splits(tasks_path, out)
+
+
+def test_sound_split_only_uses_tasks_the_reference_fix_resolves(tasks):
+    resolvable = {t["instance_id"] for t in tasks if not t["instance_id"].endswith(("0", "5"))}
+    sound = make_splits(tasks, resolvable=resolvable)["sound40"]
+    assert len(sound) == 40 and set(sound) <= resolvable
+    assert sound == make_splits(list(reversed(tasks)), resolvable=resolvable)["sound40"]
+
+
+def test_write_splits_adds_a_new_split_but_keeps_frozen_ones(tasks, tmp_path):
+    tasks_path = tmp_path / "tasks.jsonl"
+    tasks_path.write_text("\n".join(json.dumps(t) for t in tasks))
+    out = tmp_path / "splits.json"
+    frozen = write_splits(tasks_path, out)
+    oracle = tmp_path / "oracle.json"
+    oracle.write_text(json.dumps({"resolvable": [t["instance_id"] for t in tasks[:70]]}))
+
+    splits = write_splits(tasks_path, out, oracle_path=oracle)
+
+    assert {k: splits[k] for k in frozen} == frozen and len(splits["sound40"]) == 40
+    assert json.loads(out.read_text()) == splits
+
+
+def test_sound_split_keeps_the_repo_mix_of_the_resolvable_tasks(tasks):
+    resolvable = {t["instance_id"] for t in tasks if t["repo"] != "org/small"}  # big 60, mid 30
+
+    sound = make_splits(tasks, resolvable=resolvable)["sound40"]
+
+    assert sum(i.startswith("big") for i in sound) == 27 and sum(i.startswith("mid") for i in sound) == 13

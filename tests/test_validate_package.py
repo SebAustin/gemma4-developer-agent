@@ -61,6 +61,67 @@ def test_long_time_budget_warns(bundle):
     assert report.ok and any("12 h" in w for w in report.warnings)
 
 
+def test_serial_projection_counts_sandbox_setup(bundle):
+    (bundle / "eval_config.yaml").write_text("evaluation:\n  max_time_minutes: 6\n")
+    report = validate_bundle(bundle)
+    assert any("14.0 h" in w for w in report.warnings), report.format()
+    (bundle / "eval_config.yaml").write_text("evaluation:\n  max_time_minutes: 5\n")
+    assert not validate_bundle(bundle).warnings
+
+
+def test_short_verification_timeout_warns_because_it_caps_the_scoring_tests(bundle):
+    (bundle / "eval_config.yaml").write_text("evaluation:\n  max_time_minutes: 5\n  timeout_seconds: 180\n")
+    report = validate_bundle(bundle)
+    assert report.ok and any("timeout_seconds=180" in w and "scoring" in w for w in report.warnings)
+    (bundle / "eval_config.yaml").write_text("evaluation:\n  max_time_minutes: 5\n  timeout_seconds: 240\n")
+    assert not validate_bundle(bundle).warnings
+
+
+def test_large_max_output_tokens_warns_about_the_32k_request_limit(bundle):
+    agent = bundle / "agent.yaml"
+    agent.write_text(agent.read_text().replace("max_output_tokens: 8192", "max_output_tokens: 16384"))
+    report = validate_bundle(bundle)
+    assert report.ok and any("max_output_tokens=16384" in w for w in report.warnings)
+
+
+def test_hidden_thoughts_with_a_thinking_budget_warn_in_an_included_config(bundle):
+    agent = bundle / "agent.yaml"
+    sampling = "generate_content_config:\n  temperature: 0.2\n  max_output_tokens: 8192\n"
+    agent.write_text(agent.read_text().replace(sampling, "generate_content_config: !include configs/sampling.yaml\n"))
+    (bundle / "configs").mkdir()
+    (bundle / "configs" / "sampling.yaml").write_text(
+        "temperature: 0.2\nthinking_config:\n  thinking_budget: 4096\n  include_thoughts: false\n")
+    report = validate_bundle(bundle)
+    assert report.ok, report.format()
+    assert [w for w in report.warnings if "include_thoughts" in w]
+
+
+def test_null_thinking_budget_does_not_crash_validation(bundle):
+    (bundle / "configs").mkdir()
+    (bundle / "configs" / "sampling.yaml").write_text("thinking_config:\n  thinking_budget:\n  include_thoughts: false\n")
+
+    report = validate_bundle(bundle)
+
+    assert report.ok, report.format()
+
+
+@pytest.mark.parametrize(("name", "text"), [("broken.yaml", "a: [1,\n"), ("tagged.yaml", "x: !secret value\n")])
+def test_unreadable_yaml_is_a_report_error_not_a_crash(bundle, name, text):
+    (bundle / name).write_text(text)
+
+    report = validate_bundle(bundle)
+
+    assert any(name in e for e in report.errors)
+
+
+def test_non_numeric_timeout_is_a_report_error(bundle):
+    (bundle / "eval_config.yaml").write_text("evaluation:\n  timeout_seconds: soon\n")
+
+    report = validate_bundle(bundle)
+
+    assert any("timeout_seconds" in e for e in report.errors)
+
+
 def test_package_is_deterministic_with_root_agent_yaml(bundle, tmp_path):
     z1 = package_bundle(bundle, tmp_path / "a.zip")
     z2 = package_bundle(bundle, tmp_path / "b.zip")
