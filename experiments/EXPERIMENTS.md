@@ -64,6 +64,7 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
+| 2026-10-07 | (scheduled 00:01 UTC) | 689a8fb46e18 | pending | v4_guard_budget: v3_guard + 240 s, 8 min / 28 calls / 80 turns; projected 10–12 h serial |
 | 2026-10-06 | 56885293 | adce53d47bc8 | pending | v3_guard: v2_noskill + ship check (reverts test/config edits, removes scratch files); docs/diagnosis/test-patch-conflicts.md |
 | 2026-10-05 | 56836396 | 64e7add9e296 | **0.13** | v2_noskill: v2_fast prompt, shell commands instead of the swe skill; our best |
 | 2026-10-03 | 56810022 | 0028c7312dfe | **0.06** | v2_fast: edit by 6th call, 5 min / 40 calls; dev30 6/30 vs v1 5/30 |
