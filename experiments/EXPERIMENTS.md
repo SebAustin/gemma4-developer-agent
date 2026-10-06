@@ -21,11 +21,12 @@ All three runs: Kaggle env (ceiling 18/30), scorer memory config (0.80), no serv
 |---|---|---|
 | resolved | 6 | first edit at median call 9, ~120 s |
 | patch, test-patch conflict | 3 | agent edited lines the hidden test patch changes; harness never reverts them (docs/diagnosis/test-patch-conflicts.md) → `v3_guard` |
-| patch, Kaggle-env gap | 2 | missing `inline_snapshot`; not an agent failure, absent at the scorer |
+| patch, Kaggle-env gap | 1 | fastapi_14349: missing `inline_snapshot`; not an agent failure, absent at the scorer |
 | patch, missing public name | 2 | test imports a name the issue never states (fastapi_15030), or a variant the agent skipped (`router.frontend`, fastapi_15800) |
-| patch, wrong behaviour | 4 | rich rendering assertions (3296, 3470, 3535, 4076) |
+| patch, wrong behaviour | 2 | rich rendering assertions (3296, 3535) |
+| patch, scratch files only | 3 | only `repro.py` in the patch (rich_3470, rich_4076, fastapi_14246) → `v3_guard` deletes them, but the source edit was never made |
 | patch, other | 2 | requests_6592 (no test output), requests_7505 (timeout) |
-| no source edit | 11 | 9 never edited (still exploring at the 5-min wall); 3 of the patches above were scratch files only (`repro.py`) |
+| no patch | 11 | 9 never edited (still exploring at the 5-min wall) |
 
 ## Leaderboard submissions
 LB noise is about ±0.06, not ±0.03. A public notebook resubmitted one unchanged archive and got 0.12, 0.10 and 0.06. So a single submission cannot rank variants, and variants are compared on serial dev runs instead (ADR 0004).
