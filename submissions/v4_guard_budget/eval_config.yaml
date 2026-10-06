@@ -1,0 +1,8 @@
+# v3_guard + the budget envelope measured by the public "Budget-Fit" notebook.
+# timeout_seconds also caps the scoring pytest run on the hidden test files (docs/HARNESS_NOTES.md).
+# The 28-call cap ends most tasks well before 8 min, which keeps ~120 serial tasks inside 12 h.
+evaluation:
+  timeout_seconds: 240
+  max_tool_calls: 28
+  max_time_minutes: 8
+  max_turns: 80
