@@ -36,9 +36,10 @@ The one-factor-per-day LB ablation plan of 2026-10-05 is superseded.
 | order | bundle | single change vs v2_noskill | question |
 |---|---|---|---|
 | 1 | `v2_noskill` | baseline | does serial dev rank like the LB? |
-| 2 | `v3_budget` | timeout 240, 8 min / 28 calls / 80 turns | does the measured budget envelope help? |
+| 2 | `v3_budget` | timeout 240, 8 min / 28 calls / 80 turns | does the measured budget envelope help? (the timeout part should be neutral: scoring pytest takes ≤ 9.2 s on all 129 public tasks) |
 | 3 | `v3_sampling` | temp 0.2, no top_k, thinking 4096, out 8192 | does longer thinking pay for its time? |
 | 4 | `v3_edit12` | localize ≤10 calls, first edit by call 12, no exploration after 20 | is "edit by call 6" too aggressive? |
+| 1b | `v3_guard` | prompt: no test/config edits, ship check reverts them and removes scratch files | how many tasks did test-patch conflicts and scratch-only patches cost? (in v2_fast dev30: 3 conflicts + 3 scratch-only of 19 patches) |
 | 5 (optional) | `v2_fast` | swe skill | is the skill effect real (paper)? |
 
 Winners stack into `v4`. Submit only when dev shows ≥ +4 of 40 over the current best.
