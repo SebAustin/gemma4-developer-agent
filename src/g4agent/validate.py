@@ -235,7 +235,7 @@ def _lint_eval_config(bundle: Path, report: ValidationReport) -> None:
     worst_hours = SCORER_TASKS * (minutes + SETUP_MINUTES_PER_TASK) / 60
     if worst_hours > SCORER_WALL_CLOCK_HOURS:
         report.warnings.append(f"max_time_minutes={minutes}: if every task hits the cap, {SCORER_TASKS} serial tasks "
-                               f"plus sandbox setup take {worst_hours:.1f} h (> {SCORER_WALL_CLOCK_HOURS} h limit); keep tool-call caps tight")
+                               f"plus sandbox setup take {worst_hours:.1f} h; over {SCORER_WALL_CLOCK_HOURS} h the whole submission errors")
 
 
 def validate_bundle(bundle: str | Path) -> ValidationReport:
