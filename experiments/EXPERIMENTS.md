@@ -64,6 +64,7 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
+| 2026-10-08 | 56958315 | 689a8fb46e18 | pending | v4_guard_budget, identical resubmission: measures our own LB noise (paper claim 1) |
 | 2026-10-07 | 56893672 | 689a8fb46e18 | **0.13** | v4_guard_budget: v3_guard + 240 s, 8 min / 28 calls / 80 turns; finished inside 12 h; ties v2_noskill (within the ±0.06 noise) |
 | 2026-10-06 | 56885293 | adce53d47bc8 | **ERROR** (Kaggle "system error" after a long run; same wave hit many teams on 2026-10-06, rerun requested in the forum, comment 3535245 on discussion 743683) | v3_guard: v2_noskill + ship check (reverts test/config edits, removes scratch files); docs/diagnosis/test-patch-conflicts.md |
 | 2026-10-05 | 56836396 | 64e7add9e296 | **0.13** | v2_noskill: v2_fast prompt, shell commands instead of the swe skill; our best |
