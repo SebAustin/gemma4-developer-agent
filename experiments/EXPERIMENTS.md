@@ -64,8 +64,8 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
-| 2026-10-07 | 56893672 | 689a8fb46e18 | pending | v4_guard_budget: v3_guard + 240 s, 8 min / 28 calls / 80 turns; projected 10–12 h serial |
-| 2026-10-06 | 56885293 | adce53d47bc8 | **ERROR** (Kaggle "system error" after a long run; same wave hit many teams on 2026-10-06, rerun requested by others in the forum) | v3_guard: v2_noskill + ship check (reverts test/config edits, removes scratch files); docs/diagnosis/test-patch-conflicts.md |
+| 2026-10-07 | 56893672 | 689a8fb46e18 | **0.13** | v4_guard_budget: v3_guard + 240 s, 8 min / 28 calls / 80 turns; finished inside 12 h; ties v2_noskill (within the ±0.06 noise) |
+| 2026-10-06 | 56885293 | adce53d47bc8 | **ERROR** (Kaggle "system error" after a long run; same wave hit many teams on 2026-10-06, rerun requested in the forum, comment 3535245 on discussion 743683) | v3_guard: v2_noskill + ship check (reverts test/config edits, removes scratch files); docs/diagnosis/test-patch-conflicts.md |
 | 2026-10-05 | 56836396 | 64e7add9e296 | **0.13** | v2_noskill: v2_fast prompt, shell commands instead of the swe skill; our best |
 | 2026-10-03 | 56810022 | 0028c7312dfe | **0.06** | v2_fast: edit by 6th call, 5 min / 40 calls; dev30 6/30 vs v1 5/30 |
 | 2026-10-02 | 56783164 | 9c208aa2c19a | **0.08** | v1_scaffold: swe skill + red/green workflow, 5 min / 40 calls; below sample (~0.12), see docs/diagnosis/v1-regression.md |
