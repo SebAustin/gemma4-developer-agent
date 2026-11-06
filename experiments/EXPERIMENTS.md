@@ -46,6 +46,9 @@ Reading as of 2026-11-06: v2_noskill 0.13, v3_guard 0.10, v4_guard_budget 0.13 /
 | "Measure before you tune" | identical archive resubmitted | 0.12 / 0.10 / 0.06 |
 | strongest public bundles | temp 0.2, top_k 40 or unset, out 8192, thinking 4096 or off | 0.10–0.13 |
 
+### Serial dev runs on harness 0.2.11 (pushed 2026-11-06)
+`v2_noskill` and `v2_fast` on `sound40`, concurrency 1, in parallel (kernels `g4-eval-v2-noskill-sound40-h0211`, `g4-eval-v2-fast-sound40-h0211`). They test paper claims 3 (skill vs shell) and 6 (does serial dev track the LB). The 2026-10-06 attempt crashed on the removed `swegemma.models.discovery`.
+
 ### Serial dev plan on `sound40` (concurrency 1; compare with `g4 compare`)
 | order | bundle | single change vs v2_noskill | question |
 |---|---|---|---|
@@ -66,6 +69,7 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
+| 2026-11-06 | 58068665 | 64e7add9e296 | pending | v2_noskill resubmission, **harness swegemma 0.2.11** (rows below were scored on 0.2.7 unless noted) |
 | 2026-10-08 | 56958315 | 689a8fb46e18 | **0.10** | v4_guard_budget, identical resubmission: 0.13 then 0.10, so our own leaderboard noise is ±0.03 (2 tasks of ~58) |
 | 2026-10-07 | 56893672 | 689a8fb46e18 | **0.13** | v4_guard_budget: v3_guard + 240 s, 8 min / 28 calls / 80 turns; finished inside 12 h; ties v2_noskill (within the ±0.06 noise) |
 | 2026-10-06 | 56885293 | adce53d47bc8 | **0.10** (rerun by the host after the 2026-10-06 Kaggle error wave; requested in discussion 743683) | v3_guard: v2_noskill + ship check (reverts test/config edits, removes scratch files); docs/diagnosis/test-patch-conflicts.md |
