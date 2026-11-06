@@ -194,9 +194,9 @@ The repository (Apache-2.0) contains:
 
 ## 7. Related work
 
-- **SWE-bench** [1] established issue resolution against hidden tests. SWE-bench Verified [5] and SWE-Bench+ [6] showed that a sizable share of benchmark tasks are flawed or leak their solutions. Our reference-fix ceilings are the environment-side analogue: tasks that are unsolvable *in a given runtime*.
+- **SWE-bench** [1] established issue resolution against hidden tests. SWE-bench Verified [5] found many tasks underspecified or unfairly tested. SWE-Bench+ [6] found that a large share of patches counted as resolved leaked the solution or passed weak tests. Our reference-fix ceilings are the environment-side analogue: tasks that are unsolvable *in a given runtime*.
 - **Agent design.** SWE-agent [2] argued that the agent-computer interface matters. Agentless [3] showed that simple localisation and repair pipelines compete with complex agents. OpenHands [4] provides an open agent platform. Our skill result is a cautionary data point for interface design that is tuned on visible repositories.
-- **Evaluation noise.** Kapoor et al. [8] call for cost-aware, reproducible agent evaluation. Madaan et al. [9] quantify seed variance in LLM benchmarks. Blum and Hardt [7] analyse adaptive overfitting to competition leaderboards. Paired tests for comparing classifiers go back to Dietterich [10].
+- **Evaluation noise.** Kapoor et al. [8] call for cost-aware, reproducible agent evaluation. Madaan et al. [9] quantify how much benchmark scores vary, including across models trained with different seeds. Blum and Hardt [7] analyse adaptive overfitting to competition leaderboards. Paired tests for comparing classifiers go back to Dietterich [10].
 
 ## 8. Limitations
 
@@ -214,10 +214,10 @@ The tooling, experiments and analysis were developed with the help of an AI codi
 [1] C. E. Jimenez et al. SWE-bench: Can Language Models Resolve Real-World GitHub Issues? ICLR 2024.
 [2] J. Yang et al. SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering. NeurIPS 2024.
 [3] C. S. Xia et al. Agentless: Demystifying LLM-based Software Engineering Agents. arXiv:2407.01489, 2024.
-[4] X. Wang et al. OpenHands: An Open Platform for AI Software Developers as Generalist Agents. arXiv:2407.16741, 2024.
+[4] X. Wang et al. OpenHands: An Open Platform for AI Software Developers as Generalist Agents. ICLR 2025. arXiv:2407.16741.
 [5] N. Chowdhury et al. Introducing SWE-bench Verified. OpenAI, 2024.
 [6] R. Aleithan et al. SWE-Bench+: Enhanced Coding Benchmark for LLMs. arXiv:2410.06992, 2024.
 [7] A. Blum, M. Hardt. The Ladder: A Reliable Leaderboard for Machine Learning Competitions. ICML 2015.
 [8] S. Kapoor et al. AI Agents That Matter. arXiv:2407.01502, 2024.
 [9] L. Madaan et al. Quantifying Variance in Evaluation Benchmarks. arXiv:2406.10229, 2024.
-[10] T. G. Dietterich. Approximate Statistical Tests for Comparing Supervised Classification Learning Algorithms. Neural Computation, 1998.
+[10] T. G. Dietterich. Approximate Statistical Tests for Comparing Supervised Classification Learning Algorithms. Neural Computation 10(7):1895–1923, 1998.
