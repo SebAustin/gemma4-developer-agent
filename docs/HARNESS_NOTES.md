@@ -1,5 +1,16 @@
 # Harness notes (verified by reading the source)
 
+> **Current harness: swegemma 0.2.11 / adk_submission 0.2.13** (wheelhouse republished 2026-10-12, no changelog). What changed from 0.2.7:
+> - Test and config edits are stripped from the agent patch, and the test-file reset works. The test-reset bug below is fixed.
+> - The scoring pytest run has its own `verification_timeout_seconds` (300). The bundle's `timeout_seconds` now caps agent commands only.
+> - `include_thoughts: false` no longer disables reasoning. Thoughts are still generated, but stripped from history.
+> - `validate_single_declared_model` and `setup_gemma_model_registry` were removed. Use `adk_submission.discovery.discover_declared_models`.
+> - Tool exceptions return to the model as `{'status': 'error'}` instead of crashing. Sandbox errors keep the patch graded.
+> - The workspace tree in the prompt prunes `tests/` and `docs/` and is capped at 200 lines.
+> - Tool names, signatures and output caps are unchanged.
+>
+> Sections below describe 0.2.7 unless stated otherwise.
+
 Source: `swegemma 0.2.7`, `adk_submission 0.2.11`, `adk_eval_core 0.1.0` and `google-adk 1.36.1`, all from the Kaggle dataset `metric/gemma-4-developer-agent-wheelhouse`. Run `scripts/fetch_harness.sh`, then read `.venv/lib/python3.12/site-packages/`.
 
 ## Skills (`skills:` on an LlmAgent)

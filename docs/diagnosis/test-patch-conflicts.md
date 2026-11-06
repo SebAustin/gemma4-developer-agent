@@ -1,5 +1,7 @@
 # Correct fixes fail with "Failed to apply test_patch"
 
+Status: **fixed upstream in swegemma 0.2.11** (wheelhouse republished 2026-10-12). We found and documented it independently on 2026-10-06 (commit `0dc6bed`) and did not report it. Since 0.2.11 the reset passes only tracked paths to `git checkout`, and `strip_protected_files_from_patch` drops test and config files from the agent's patch before scoring (`harness/verification.py`). The bundle-side ship check is now redundant but harmless.
+
 ## Symptom
 In the dev30 runs, 3/30 tasks (v2_fast) and 2/30 (v1) failed with `Failed to apply test_patch`. One of them, `fastapi_14077`, changed exactly the three files of the reference patch. Every failing patch also edited a test file that the hidden test patch changes.
 

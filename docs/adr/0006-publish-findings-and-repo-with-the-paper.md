@@ -15,3 +15,6 @@ The paper track (`gemma-4-developer-agent-paper`, due 2026-11-12) closes three w
 ## Consequences
 - Before the repository goes public, check it for secrets, Kaggle credentials and private-data paths.
 - Competitors may adopt the cleanup step before Dec 2.
+
+## Note (2026-11-06)
+The harness republished on 2026-10-12 (swegemma 0.2.11) fixes the test-reset bug, so disclosing it no longer gives competitors anything. The paper presents it as independently found (2026-10-06) and confirmed by the upstream fix, without claiming credit for the fix.
