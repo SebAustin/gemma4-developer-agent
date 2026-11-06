@@ -104,10 +104,14 @@ def start_server(model_dir: Path):
     import litellm
     from adk_submission import VllmConfig, VllmServer, discover_adapters
     from swegemma.config import ALLOWED_ADAPTER_EXTENSIONS
-    from swegemma.models.discovery import validate_single_declared_model
+    from adk_submission.discovery import discover_declared_models
 
     litellm.drop_params = True
-    declared = validate_single_declared_model(AGENT_DIR)
+    # swegemma >= 0.2.11 removed validate_single_declared_model; mirror the harness CLI instead.
+    declared_models = sorted({m.strip() for m in discover_declared_models(AGENT_DIR)})
+    if len(declared_models) != 1:
+        raise RuntimeError(f"bundle must declare exactly one model, found {declared_models}")
+    declared = declared_models[0]
     adapters = discover_adapters(str(AGENT_DIR), adapter_extensions=ALLOWED_ADAPTER_EXTENSIONS)
     gpus = torch.cuda.device_count()
     cfg = VllmConfig(

@@ -27,10 +27,9 @@ MAX_LORA_RANK = 128
 SESSION_STATE_KEYS = {"problem_description"}
 OPTIONAL_STATE_KEYS = {"hints"}
 PLACEHOLDER_RE = re.compile(r"{+[^{}]*}+")  # identical to google.adk.utils.instructions_utils
-# eval_config `timeout_seconds` is also the timeout of the scoring pytest run
-# (swegemma config.py -> harness.command_timeout_seconds -> harness/verification.py).
-DEFAULT_VERIFICATION_TIMEOUT = 300  # harness default for timeout_seconds
-MIN_VERIFICATION_TIMEOUT = 240
+# eval_config `timeout_seconds` caps agent commands only; since swegemma 0.2.11 the scoring pytest
+# run has its own HarnessLimits.verification_timeout_seconds (300).
+DEFAULT_COMMAND_TIMEOUT = 300
 MAX_MODEL_LEN = 32768  # scorer's vLLM max_model_len
 MAX_SAFE_OUTPUT_TOKENS = 8192
 # The scorer runs ~120 tasks one after another; its 12 h include sandbox setup, not grading.
@@ -102,21 +101,25 @@ def _stub_tools() -> dict:
 def _compile(bundle: Path, report: ValidationReport) -> None:
     from adk_submission import compile_submission, discover_adapters
     from swegemma.config import ALLOWED_ADAPTER_EXTENSIONS, build_submission_limits
-    from swegemma.models.discovery import validate_single_declared_model
-    from swegemma.models.registry import setup_gemma_model_registry
+    from adk_submission.discovery import discover_declared_models
+    from swegemma.cli import _build_cli_model_registry  # the harness CLI's own registry builder
 
     try:
-        model = validate_single_declared_model(bundle)
+        declared = sorted({m.strip() for m in discover_declared_models(bundle)})
     except Exception as e:  # noqa: BLE001 - surface any harness validation error verbatim
         report.errors.append(f"model declaration: {e}")
         return
+    if len(declared) != 1:
+        report.errors.append(f"bundle must declare exactly one model, found {declared}")
+        return
+    model = declared[0]
     if model != ALLOWED_MODEL:
         report.errors.append(f"declared model {model!r} is not the competition model {ALLOWED_MODEL!r}")
 
     limits, gen_constraints = build_submission_limits()
     try:
         adapters = discover_adapters(str(bundle), adapter_extensions=ALLOWED_ADAPTER_EXTENSIONS)
-        models = setup_gemma_model_registry(api_base="http://127.0.0.1:9/v1", adapter_manifest=adapters)
+        models = _build_cli_model_registry(submission_dir=bundle)
         compile_submission(
             submission_dir=bundle,
             tool_registry=_stub_tools(),
@@ -210,28 +213,21 @@ def _lint_sampling(bundle: Path, report: ValidationReport) -> None:
             if isinstance(max_out, int) and max_out > MAX_SAFE_OUTPUT_TOKENS:
                 report.warnings.append(f"{rel}: max_output_tokens={max_out}: vLLM rejects requests whose prompt "
                                        f"+ max output exceed {MAX_MODEL_LEN} tokens; use <= {MAX_SAFE_OUTPUT_TOKENS}")
-            thinking = m.get("thinking_config")
-            if isinstance(thinking, dict) and thinking.get("include_thoughts") is False \
-                    and (thinking.get("thinking_budget") or 0) > 0:
-                report.warnings.append(f"{rel}: include_thoughts: false disables reasoning in the ADK bridge, "
-                                       "so thinking_budget is ignored")
 
 
 def _lint_eval_config(bundle: Path, report: ValidationReport) -> None:
     path = bundle / "eval_config.yaml"
     if not path.is_file():
-        report.warnings.append("no eval_config.yaml: harness defaults apply (60 min/task, 100 tool calls)")
+        report.warnings.append("no eval_config.yaml: the scorer then applies no per-task limits (host-confirmed), "
+                               "so 120 tasks can exceed the 12 h total and error the submission")
         return
     section = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("evaluation", {})
     try:
-        timeout = int(section.get("timeout_seconds", DEFAULT_VERIFICATION_TIMEOUT))
+        int(section.get("timeout_seconds", DEFAULT_COMMAND_TIMEOUT))  # must parse; no longer caps scoring
         minutes = float(section.get("max_time_minutes", 60.0))
     except (TypeError, ValueError) as e:
         report.errors.append(f"eval_config.yaml: timeout_seconds and max_time_minutes must be numbers ({e})")
         return
-    if timeout < MIN_VERIFICATION_TIMEOUT:
-        report.warnings.append(f"timeout_seconds={timeout}: it also caps the scoring pytest run on the hidden "
-                               f"test files, so slow files fail correct patches; use >= {MIN_VERIFICATION_TIMEOUT}")
     worst_hours = SCORER_TASKS * (minutes + SETUP_MINUTES_PER_TASK) / 60
     if worst_hours > SCORER_WALL_CLOCK_HOURS:
         report.warnings.append(f"max_time_minutes={minutes}: if every task hits the cap, {SCORER_TASKS} serial tasks "

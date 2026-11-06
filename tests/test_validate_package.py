@@ -69,12 +69,12 @@ def test_serial_projection_counts_sandbox_setup(bundle):
     assert not validate_bundle(bundle).warnings
 
 
-def test_short_verification_timeout_warns_because_it_caps_the_scoring_tests(bundle):
-    (bundle / "eval_config.yaml").write_text("evaluation:\n  max_time_minutes: 5\n  timeout_seconds: 180\n")
+def test_short_command_timeout_no_longer_warns_since_scoring_has_its_own_timeout(bundle):
+    (bundle / "eval_config.yaml").write_text("evaluation:\n  max_time_minutes: 5\n  timeout_seconds: 60\n")
+
     report = validate_bundle(bundle)
-    assert report.ok and any("timeout_seconds=180" in w and "scoring" in w for w in report.warnings)
-    (bundle / "eval_config.yaml").write_text("evaluation:\n  max_time_minutes: 5\n  timeout_seconds: 240\n")
-    assert not validate_bundle(bundle).warnings
+
+    assert report.ok and not report.warnings, report.format()
 
 
 def test_large_max_output_tokens_warns_about_the_32k_request_limit(bundle):
@@ -84,16 +84,17 @@ def test_large_max_output_tokens_warns_about_the_32k_request_limit(bundle):
     assert report.ok and any("max_output_tokens=16384" in w for w in report.warnings)
 
 
-def test_hidden_thoughts_with_a_thinking_budget_warn_in_an_included_config(bundle):
+def test_hidden_thoughts_with_a_thinking_budget_are_valid_in_an_included_config(bundle):
     agent = bundle / "agent.yaml"
     sampling = "generate_content_config:\n  temperature: 0.2\n  max_output_tokens: 8192\n"
     agent.write_text(agent.read_text().replace(sampling, "generate_content_config: !include configs/sampling.yaml\n"))
     (bundle / "configs").mkdir()
     (bundle / "configs" / "sampling.yaml").write_text(
         "temperature: 0.2\nthinking_config:\n  thinking_budget: 4096\n  include_thoughts: false\n")
+
     report = validate_bundle(bundle)
-    assert report.ok, report.format()
-    assert [w for w in report.warnings if "include_thoughts" in w]
+
+    assert report.ok and not report.warnings, report.format()
 
 
 def test_null_thinking_budget_does_not_crash_validation(bundle):
