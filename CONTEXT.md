@@ -34,6 +34,10 @@ _Avoid_: solved, passed, fixed
 The competition's private evaluation run, which produces the leaderboard score. We cannot inspect it.
 _Avoid_: grader, metric, evaluator
 
+**Leaderboard noise**:
+The spread of public leaderboard scores between submissions of the same bundle. Measured at ±0.03 (our two runs of one bundle) to ±0.06 (a public bundle run three times), that is 2–4 of the ~58 public tasks. Score gaps smaller than this say nothing about which variant is better.
+_Avoid_: variance, randomness, luck
+
 **Environment**:
 Where a task's tests execute, defined by the packages they can import. There are three, and they differ: the **local environment** (our Docker sandbox), the **Kaggle environment** (a Kaggle notebook's sandbox) and the **scoring environment** (the scorer's).
 _Avoid_: setup, platform

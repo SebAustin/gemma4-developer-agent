@@ -29,13 +29,15 @@ All three runs: Kaggle env (ceiling 18/30), scorer memory config (0.80), no serv
 | no patch | 11 | 9 never edited (still exploring at the 5-min wall) |
 
 ## Leaderboard submissions
-LB noise is about ±0.06, not ±0.03. A public notebook resubmitted one unchanged archive and got 0.12, 0.10 and 0.06. So a single submission cannot rank variants, and variants are compared on serial dev runs instead (ADR 0004).
+LB noise is about ±0.03–0.06: our identical resubmission of v4_guard_budget scored 0.13 then 0.10, and a public notebook's unchanged archive scored 0.12 / 0.10 / 0.06. A public notebook resubmitted one unchanged archive and got 0.12, 0.10 and 0.06. So a single submission cannot rank variants, and variants are compared on serial dev runs instead (ADR 0004).
 
 Read with that caveat:
 - Both skill bundles trail the sample (0.08, 0.06).
 - `v2_noskill`, the same prompt without the skill, scored 0.13 (ADR 0005).
 
 The one-factor-per-day LB ablation plan of 2026-10-05 is superseded.
+
+Reading as of 2026-11-06: v2_noskill 0.13, v3_guard 0.10, v4_guard_budget 0.13 / 0.10. The leaderboard shows **no detectable effect** of the guard. The mechanism stays confirmed by the Docker replay (docs/diagnosis/test-patch-conflicts.md); its size on the hidden repos is unknown.
 
 ### Public evidence (2026-10-06, read from notebooks; not reproduced by us)
 | source | config | reported |
@@ -64,9 +66,9 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
-| 2026-10-08 | 56958315 | 689a8fb46e18 | pending | v4_guard_budget, identical resubmission: measures our own LB noise (paper claim 1) |
+| 2026-10-08 | 56958315 | 689a8fb46e18 | **0.10** | v4_guard_budget, identical resubmission: 0.13 then 0.10, so our own leaderboard noise is ±0.03 (2 tasks of ~58) |
 | 2026-10-07 | 56893672 | 689a8fb46e18 | **0.13** | v4_guard_budget: v3_guard + 240 s, 8 min / 28 calls / 80 turns; finished inside 12 h; ties v2_noskill (within the ±0.06 noise) |
-| 2026-10-06 | 56885293 | adce53d47bc8 | **ERROR** (Kaggle "system error" after a long run; same wave hit many teams on 2026-10-06, rerun requested in the forum, comment 3535245 on discussion 743683) | v3_guard: v2_noskill + ship check (reverts test/config edits, removes scratch files); docs/diagnosis/test-patch-conflicts.md |
+| 2026-10-06 | 56885293 | adce53d47bc8 | **0.10** (rerun by the host after the 2026-10-06 Kaggle error wave; requested in discussion 743683) | v3_guard: v2_noskill + ship check (reverts test/config edits, removes scratch files); docs/diagnosis/test-patch-conflicts.md |
 | 2026-10-05 | 56836396 | 64e7add9e296 | **0.13** | v2_noskill: v2_fast prompt, shell commands instead of the swe skill; our best |
 | 2026-10-03 | 56810022 | 0028c7312dfe | **0.06** | v2_fast: edit by 6th call, 5 min / 40 calls; dev30 6/30 vs v1 5/30 |
 | 2026-10-02 | 56783164 | 9c208aa2c19a | **0.08** | v1_scaffold: swe skill + red/green workflow, 5 min / 40 calls; below sample (~0.12), see docs/diagnosis/v1-regression.md |
