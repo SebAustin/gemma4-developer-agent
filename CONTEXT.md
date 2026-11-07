@@ -20,6 +20,10 @@ _Avoid_: tool (reserved for the harness's built-in tools such as `edit_file`)
 Sending one bundle to the competition for scoring. Limited to one per day.
 _Avoid_: upload, entry
 
+**Reproduction**:
+A submission of another team's public bundle, unchanged except for repackaging through our pipeline, to check that its claimed leaderboard score holds in our hands (ADR 0007).
+_Avoid_: copy, clone, fork submission
+
 ## Evaluation
 
 **Task**:
