@@ -22,7 +22,7 @@ Agent competitions with hidden test sets invite a familiar loop: change the prom
 - **The public leaderboard sees about half of them.** Each submission is a 12-hour GPU run, and teams get one a day.
 - **The harness is a moving target.** It is a set of wheels the organizers republished twice during the competition, sometimes under the same version number.
 
-We entered with a plan to improve the agent through prompt workflows, custom tools and budget tuning. Our scores never left the 0.06–0.13 band. Meanwhile, the measurement work we built to explain them produced findings that transfer to any team building agents against a hidden benchmark. This paper reports them.
+We set out to improve the agent through prompts, custom tools and budget tuning, but our scores never left the 0.06–0.13 band. The measurement work we built to explain them produced findings that transfer to any team building agents against a hidden benchmark.
 
 **Contributions.**
 1. A noise model of the public leaderboard, from repeated submissions of identical bundles.
@@ -68,7 +68,7 @@ There is no agent code. The harness (`swegemma`/`adk_submission`) compiles the Y
 | `v4_guard_budget` (ours, identical resubmission) | 0.13, 0.10 |
 | `v2_noskill` (ours) | 0.13, TODO(LB 58068665, harness 0.2.11) |
 
-With ~58 public tasks, one task is worth 0.017. A spread of 0.03–0.06 is therefore 2–4 tasks. The scorer runs one sampled generation per step with temperature 0.2–0.3, and agent trajectories branch early, so this is not surprising. It is still easy to forget when each data point costs a day.
+With ~58 public tasks, one task is worth 0.017. A spread of 0.03–0.06 is therefore 2–4 tasks. Sampling at temperature 0.2–0.3 and early-branching trajectories make this unsurprising, but easy to forget when each data point costs a day.
 
 All our between-bundle differences fall inside this spread, except the two skill bundles against the rest (Section 5.1). We adopted a rule: a single leaderboard comparison is never evidence. Leaderboard slots serve to confirm large dev effects and to estimate noise.
 
@@ -81,11 +81,11 @@ Before measuring any agent, we ran every public task through the *real harness* 
 | Docker sandbox, per-task dependency set | 105/129 | requests tests need network; rich rendering is version-sensitive |
 | Kaggle notebook (subprocess sandbox) | 73/129 | missing test dependencies (35: `inline_snapshot` 27, `dirty_equals` 7, other 1), version differences (13), network (8) |
 
-Two harness behaviours had to be fixed in our local environment before the Docker number was meaningful:
-- **Package shadowing.** The public wheel set contains the benchmark repositories themselves. When they are installed into site-packages, tests import the *released* package instead of the patched working copy, so a correct patch is ignored.
-- **Highest-version selection.** The harness deduplicates wheels by taking the highest version of each package. For older fastapi commits that pulls in an incompatible starlette.
+The Docker number needed two local fixes first:
+- **Package shadowing.** The public wheels include the benchmark repositories themselves. Installed into site-packages, they make tests import the *released* package instead of the patched copy, so a correct patch is ignored.
+- **Highest-version selection.** The harness keeps the highest version of each wheel, which pulls an incompatible starlette into older fastapi commits.
 
-Per-task wheel sets that drop the repository's own distribution and respect its pins raised the oracle from 1/5 to 5/5 on a smoke split.
+Per-task wheel sets that drop the repository's own package and respect its pins raised the oracle from 1/5 to 5/5 on a smoke split.
 
 Our first dev runs scored 5–6 of 30 tasks. That reads as 17–20%, but only 18 of those 30 tasks are solvable in the Kaggle environment, so the agent actually resolved a third of what it could. We therefore defined the **sound split** `sound40`: 40 tasks, stratified by repository and patch size, drawn only from tasks the reference fix resolves in the Kaggle environment. Every miss on `sound40` is the agent's.
 
@@ -107,7 +107,7 @@ We then ran `v2_noskill` and `v2_fast` serially on `sound40` with the scorer's b
 
 `v2_noskill` resolved 20/40 and `v2_fast` 15/40. The two runs disagree on 7 tasks, 6 of them in `v2_noskill`'s favour (exact McNemar p = 0.125). The direction matches the leaderboard (0.13 vs 0.06), but even a 5-task gap on 40 tasks is not significant.
 
-The run exposed one more way a split can be unsound. `v2_noskill` "resolved" `fastapi_14851` without editing any file: the hidden tests pass on the unmodified repository. `v2_fast` timed out there, so it counted as a loss. A sound task needs two checks: the reference fix passes *and* the empty patch fails. Without that task: 19 vs 15, 5 vs 1 discordant (p = 0.22).
+The run exposed one more way a split can be unsound. `v2_noskill` "resolved" `fastapi_14851` without editing any file: the hidden tests pass on the unmodified repository. `v2_fast` timed out there, so it counted as a loss. Replaying an empty patch over all of `sound40` found a second such task, `fastapi_14077`, whose hidden test patch only swaps a status constant for its literal value. A sound task needs two checks: the reference fix passes *and* the empty patch fails. Without both tasks: 18 vs 14 of 38, 5 vs 1 discordant (p = 0.22).
 
 ## 4. Auditing the harness
 
@@ -132,6 +132,8 @@ What happens next depends on the overlap:
 We reproduced it in the Docker sandbox the scorer uses, by replaying `fastapi_14077` with a scripted model:
 - the reference fix plus the agent's real test edit: **failed** (`Failed to apply test_patch`);
 - the same edits followed by a revert of test and config files: **resolved**.
+
+This task later turned out to pass even with an empty patch (Section 3.3). The agent's test edit had turned a free point into a loss.
 
 Our prompt had made things worse. Copying a common belief, it told the model that "the grader resets test files". The same audit found a second mechanical loss: 3 of v2_fast's 19 patches contained only a scratch `repro.py` and no source edit.
 
@@ -197,7 +199,7 @@ The pattern held on the sound split under harness 0.2.11, where environment gaps
 | scratch or test files only | 1 | 3 |
 | source patch, hidden tests fail | 8 | 10 |
 
-In both runs, about half the failures are agents that produced no patch, almost all of them still exploring when the 5-minute limit hit.
+In both runs, about half the failures produced no patch; nearly all of those timed out while still exploring.
 
 This supports spending budget on *getting to an edit* rather than on verification. It matches a public finding that runs without a source edit by call 12 fail 87% of the time. Our 8-minute variant (`v4_guard_budget`) did not separate from the 5-minute one on the leaderboard; we did not test it on dev.
 
@@ -221,7 +223,7 @@ The repository (Apache-2.0) contains:
 ## 8. Limitations
 
 - **Tiny samples.** Our leaderboard evidence is single or double submissions on ~58 tasks, and our dev evidence is 30–40 tasks with one seed.
-- **`sound40` was filtered on the reference fix only.** One of its tasks passes with an empty patch (Section 3.3). We have not yet checked the other 39 against an empty patch.
+- **`sound40` was filtered on the reference fix only.** Two of its tasks pass with an empty patch (Section 3.3). We found them after the runs and report results with and without them.
 - **Public repositories differ from the hidden ones.** The public tasks come from four well-known open-source repositories, and the hidden tasks from private ones.
 - **The harness changed under us** (0.2.7 → 0.2.11), so leaderboard scores before and after 2026-10-12 aren't strictly comparable.
 - **Partly qualitative.** The test-reset finding is exact, but its effect on the hidden set was too small to see on the leaderboard.

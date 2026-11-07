@@ -58,7 +58,7 @@ Results (completed 2026-11-06 23:43 UTC; outputs in `results/kaggle/g4-eval-*-so
 
 `g4 compare`: both 14, noskill only 6 (fastapi_11194, fastapi_14419, fastapi_14851, fastapi_15589, rich_3521, rich_3777), fast only 1 (rich_4079), neither 19. Exact McNemar **p = 0.125**. The direction agrees with the LB (0.13 vs 0.06), so claim 6 holds in direction, but the result is not significant.
 
-**Unsound task found:** `fastapi_14851` passes with an **empty patch** (noskill made 0 edits and called submit; the hidden tests ran 9 passed, exit 0). `v2_fast` timed out on it, so the tests never ran (exit -1). Excluding it: 19 vs 15, discordant 5 vs 1, p = 0.22. A sound split must also check that the empty patch fails. The other 39 tasks are not yet checked; that needs a CPU oracle run with an empty patch.
+**Unsound task found:** `fastapi_14851` passes with an **empty patch** (noskill made 0 edits and called submit; the hidden tests ran 9 passed, exit 0). `v2_fast` timed out on it, so the tests never ran (exit -1). Excluding it: 19 vs 15, discordant 5 vs 1, p = 0.22. A sound split must also check that the empty patch fails. Empty-patch replay over all of `sound40` (local Docker, `python -m g4agent.oracle_run --split sound40 --plan empty`, 2026-11-07): **2/40 pass with no edit**, `fastapi_14851` (test patch only adds coverage tests for existing behaviour) and `fastapi_14077` (test patch only swaps `status.HTTP_422_UNPROCESSABLE_ENTITY` for `422`). Excluding both: noskill 18/38, fast 14/38, discordant 5 vs 1, p = 0.22. `fastapi_14077` is the task of the test-reset Docker replay: the agent's test edit turned a free task into a failure.
 
 Outcome breakdown (patch file contents):
 

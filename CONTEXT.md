@@ -47,7 +47,7 @@ How many tasks resolve in a given environment when the agent applies the known-c
 _Avoid_: oracle score, upper bound, max score
 
 **Sound task**:
-A task whose reference fix resolves in the Kaggle environment *and* whose empty patch fails. A miss on it is then the agent's fault, not the environment's, and a pass is the agent's credit, not the task's. The `sound40` split was built with the first check only. It contains at least one task that passes with an empty patch (`fastapi_14851`).
+A task whose reference fix resolves in the Kaggle environment *and* whose empty patch fails. A miss on it is then the agent's fault, not the environment's, and a pass is the agent's credit, not the task's. The `sound40` split was built with the first check only. It contains two tasks that pass with an empty patch (`fastapi_14851`, `fastapi_14077`).
 _Avoid_: valid task, clean task
 
 **Verification timeout**:
