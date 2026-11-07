@@ -19,7 +19,7 @@ All three runs: Kaggle env (ceiling 18/30), scorer memory config (0.80), no serv
 ### Failure breakdown of v2_fast on dev30 (from trajectories; 30 tasks)
 | outcome | n | causes |
 |---|---|---|
-| resolved | 6 | first edit at median call 9, ~120 s |
+| resolved | 6 | first source edit at median call 12, ~135 s (call 9, ~120 s if scratch-file writes count; corrected 2026-11-07) |
 | patch, test-patch conflict | 3 | agent edited lines the hidden test patch changes; harness never reverts them (docs/diagnosis/test-patch-conflicts.md) → `v3_guard` |
 | patch, Kaggle-env gap | 1 | fastapi_14349: missing `inline_snapshot`; not an agent failure, absent at the scorer |
 | patch, missing public name | 2 | test imports a name the issue never states (fastapi_15030), or a variant the agent skipped (`router.frontend`, fastapi_15800) |
@@ -51,7 +51,7 @@ The leaderboard shows each team's **best** public score, so a team that submits 
 | 10–19 | 918 | 0.167 | 0.17 | 0.20 | 3.4% |
 | 20–49 | 419 | 0.183 | 0.18 | 0.20 | 8.8% |
 
-Spearman(score, submissions) = 0.59. The 77 teams at ≥ 0.22 have a median of 19 submissions; the 782 teams at 0.12–0.13 have a median of 3 (we have 7). Effort confounds this (teams that iterate more also submit more), but it matches the public census: every top public notebook is the same single-agent recipe (240 s / 28 calls / 8 min / 80 turns, T 0.2, no top_k, out 8192, thinking 4096), and identical files score 7–13 of 58 tasks across draws, mean ≈ 10/58 (0.17) for Budget-Fit over 10 draws (author's census). Our four scored draws average 7.25/58 (0.125). The real gap is about 3 tasks, not 7.
+Spearman(score, submissions) = 0.59. The 77 teams at ≥ 0.22 have a median of 19 submissions; the 782 teams at 0.12–0.13 have a median of 3 (we have 7). Effort confounds this (teams that iterate more also submit more), but it matches the public census: every top public notebook is the same single-agent recipe (240 s / 28 calls / 8 min / 80 turns, T 0.2, no top_k, out 8192, thinking 4096), and identical files score across draws as follows: mean 0.166 (0.13–0.18), about 10/58, for Budget-Fit over 10 draws (Dariush Afshar's census, quoted in public notebooks; not ours); the budget-aware files scored 7, 7, 9, 11, 13 of 58 (reported in Dmitrii Gluzdov's "Public Agent Ideas and Evidence"). Our four scored draws average 7.25/58 (0.125). The real gap is about 3 tasks, not 7.
 
 ### Public evidence (2026-10-06, read from notebooks; not reproduced by us)
 | source | config | reported |
