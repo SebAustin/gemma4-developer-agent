@@ -6,7 +6,7 @@ We therefore:
 - take Budget-Fit, unchanged, as the new base (`submissions/v5_budgetfit`, attribution in `submissions/ATTRIBUTION.md`). It is the only public recipe with a mean over many draws; its descendants (SuperAgent, flexonafft, "Baseline LB 0.24") claim single best draws and average about 8.7/58 in the same census. Their prompt ideas become candidate changes;
 - keep the ADR 0004 dev gate (paired serial run on the sound split, ≥ +4 of 40) for every change on top of the base;
 - spend every daily submission slot on the bundle with the best evidence so far, repeats included, and log each draw. Bundles are ranked by the mean of their draws plus their paired dev result, never by their best draw;
-- select the final submissions for the private leaderboard by that same evidence, not by public score.
+- select the final submissions for the private leaderboard (the rules allow up to two) by that same evidence, not by public score.
 
 ## Consequences
 - Our v1–v4 bundles stay in the repository as the paper's evidence; they are no longer the base for new variants.
