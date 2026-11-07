@@ -107,7 +107,7 @@ We then ran `v2_noskill` and `v2_fast` serially on `sound40` with the scorer's b
 
 `v2_noskill` resolved 20/40 and `v2_fast` 15/40. The two runs disagree on 7 tasks, 6 of them in `v2_noskill`'s favour (exact McNemar p = 0.125). The direction matches the leaderboard (0.13 vs 0.06), but even a 5-task gap on 40 tasks is not significant.
 
-The run exposed one more way a split can be unsound. `v2_noskill` "resolved" `fastapi_14851` without editing any file: the hidden tests pass on the unmodified repository. `v2_fast` timed out there, so it counted as a loss. Replaying an empty patch over all of `sound40` found a second such task, `fastapi_14077`, whose hidden test patch only swaps a status constant for its literal value. A sound task needs two checks: the reference fix passes *and* the empty patch fails. Without both tasks: 18 vs 14 of 38, 5 vs 1 discordant (p = 0.22).
+The run exposed one more way a split can be unsound. `v2_noskill` "resolved" `fastapi_14851` without editing any file: the hidden tests pass on the unmodified repository. `v2_fast` timed out there, so it counted as a loss. Replaying an empty patch over all 129 public tasks found one more, `fastapi_14077`, whose hidden test patch only swaps a status constant for its literal value. Both are in `sound40`. A sound task needs two checks: the reference fix passes *and* the empty patch fails. Without both tasks: 18 vs 14 of 38, 5 vs 1 discordant (p = 0.22).
 
 ## 4. Auditing the harness
 
@@ -209,7 +209,7 @@ The repository (Apache-2.0) contains:
 - `g4 validate`: compiles a bundle with the real harness and adds the checks of Section 4.2.
 - `g4 compare`: paired per-task comparison with an exact McNemar p-value.
 - `g4 splits`: frozen, stratified dev splits, including `sound40`.
-- `experiments/oracle_kaggle.json`, `oracle_local.json`: per-task reference-fix outcomes and failure reasons for both environments.
+- `experiments/oracle_kaggle.json`, `oracle_local.json`, `empty_local.json`: per-task reference-fix outcomes (with failure reasons) and empty-patch outcomes.
 - A Kaggle eval-kernel generator that embeds the bundle and split for reproducible GPU runs, plus a CPU oracle kernel.
 - Harness notes verified against source: templating, skill execution, wheel shadowing, scorer facts. Also the trajectory-based failure breakdown and the replay script for the test-reset bug.
 - All bundles of Section 2 and the experiment log with bundle hashes.
