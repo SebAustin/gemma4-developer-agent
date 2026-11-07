@@ -39,7 +39,7 @@ There is no agent code. The harness (`swegemma`/`adk_submission`) compiles the Y
 
 **Scoring.** vLLM serves the model on 4×L4 with a 32k context. Tasks run **sequentially** (host-confirmed). The hidden tests of each task run against the agent's diff. Exceeding 12 hours errors the whole submission. The score is the fraction of resolved tasks.
 
-**Our compute.** Kaggle only: 45 GPU-hours a week on 4×L4 notebooks, which our other projects also draw on. Local work used an M1 Mac with Docker.
+**Our compute.** Kaggle only: 45 GPU-hours a week on 4×L4 notebooks. Local work used an M1 Mac with Docker.
 
 **Bundles in this paper.**
 
@@ -92,7 +92,7 @@ The Docker number needed two local fixes. **Package shadowing:** the public whee
 
 Per-task wheel sets that drop the repository's own package and respect its pins raised the oracle from 1/5 to 5/5 on a smoke split.
 
-Our first dev runs scored 5–6 of 30 tasks. That reads as 17–20%, but only 18 of those 30 tasks are solvable in the Kaggle environment, so the agent actually resolved a third of what it could. We therefore defined the **sound split** `sound40`: 40 tasks, stratified by repository and patch size, drawn only from tasks the reference fix resolves in the Kaggle environment. Every miss on `sound40` is the agent's.
+Our first dev runs scored 5–6 of 30 tasks, which reads as 17–20%, but only 18 of those 30 tasks are solvable in the Kaggle environment, so the agent actually resolved a third of what it could. We therefore defined the **sound split** `sound40`: 40 tasks, stratified by repository and patch size, drawn only from tasks the reference fix resolves in the Kaggle environment. Every miss on `sound40` is the agent's.
 
 ![Figure 2](figures/fig2_ceilings.png)
 
@@ -100,7 +100,7 @@ Our first dev runs scored 5–6 of 30 tasks. That reads as 17–20%, but only 18
 
 Two variants run on the same tasks agree on most of them; only *discordant* tasks carry information. We compare runs task by task with an exact McNemar (binomial) test. Our earlier comparison shows why: on 30 tasks, v2_fast resolved every task v1 did plus one (6 vs 5), p = 1.0.
 
-Dev runs must also match the scorer's **sequential** execution: at concurrency 4 every turn is slower, which penalised the official sample's 1-minute budget so much that it scored 0/30 on dev, against ~0.12 on the leaderboard.
+Dev runs must also match the scorer's **sequential** execution: at concurrency 4 every turn is slower, which pushed the official sample's 1-minute budget to 0/30 on dev, against ~0.12 on the leaderboard.
 
 We then ran `v2_noskill` and `v2_fast` serially on `sound40` with the scorer's budget (5 min, 40 calls), on harness 0.2.11:
 
@@ -111,7 +111,7 @@ We then ran `v2_noskill` and `v2_fast` serially on `sound40` with the scorer's b
 
 `v2_noskill` resolved 20/40 and `v2_fast` 15/40. The two runs disagree on 7 tasks, 6 of them in `v2_noskill`'s favour (exact McNemar p = 0.125). The direction matches the leaderboard (0.13 vs 0.06), but even a 5-task gap on 40 tasks is not significant.
 
-The run exposed one more way a split can be unsound. `v2_noskill` "resolved" `fastapi_14851` without editing any file: the hidden tests pass on the unmodified repository. `v2_fast` timed out there, so it counted as a loss. Replaying an empty patch over all 129 public tasks found one more, `fastapi_14077`, whose hidden test patch only swaps a status constant for its literal value. Both are in `sound40`. A sound task needs two checks: the reference fix passes *and* the empty patch fails. Without both tasks: 18 vs 14 of 38, 5 vs 1 discordant (p = 0.22).
+`v2_noskill` also "resolved" `fastapi_14851` without editing any file: its hidden tests pass on the unmodified repository. Replaying an empty patch over all 129 public tasks found one more, `fastapi_14077`, whose hidden test patch only swaps a status constant for its literal value. Both are in `sound40`. A sound task needs two checks: the reference fix passes *and* the empty patch fails. Without both tasks: 18 vs 14 of 38, 5 vs 1 discordant (p = 0.22).
 
 ## 4. Auditing the harness
 
@@ -147,11 +147,12 @@ On the leaderboard, `v3_guard` scored 0.10 and its successor 0.13 / 0.10: inside
 
 ### 4.2 Other pitfalls a validator can catch
 
-Each of these cost us or other teams a run, and each is now a check in our validator:
+Each of these cost us or other teams a run; all but the last are now checks in our validator:
 - **Templating.** ADK treats any `{identifier}` in an instruction as a session-state key. A missing key raises `KeyError` at the first model call and fails the task. Only `{problem_description}` and `{hints?}` exist.
 - **The 32k request limit.** vLLM rejects prompt + `max_output_tokens` > 32,768, killing long tasks. Keep output at ≤ 8,192 (first noted publicly).
 - **The 12-hour cliff.** Exceeding 12 hours errors the whole submission rather than zeroing unfinished tasks. Our check projects 120 × (cap + 1 min setup) and warns.
 - **Verification timeout (a null result).** Before 0.2.11, `timeout_seconds` also bounded the scoring pytest run, which a public notebook warned could fail correct patches. Over all 129 public tasks, scoring pytest took at most 9.2 s (mean 1.0 s).
+- **History compaction.** At 14,336 prompt tokens, the scorer summarizes all but the agent's last five events, keeping only text: tool outputs and the verbatim issue are lost, at about 25 s each. It fired in 31 of 40 `sound40` tasks (median call 19). The system instruction, re-sent every turn, survives.
 
 ## 5. Agent design under noise
 
@@ -193,7 +194,7 @@ The pattern held on the sound split under harness 0.2.11, where environment gaps
 
 In both runs, about half the failures produced no patch; nearly all of those timed out while still exploring.
 
-This supports spending budget on *getting to an edit* rather than on verification. It matches a public finding that runs without a source edit by call 12 fail 87% of the time. Our 8-minute variant (`v4_guard_budget`) did not separate from the 5-minute one on the leaderboard; we did not test it on dev.
+This supports spending budget on *getting to an edit* rather than on verification. It matches a public finding that runs without a source edit by call 12 fail 87% of the time. Our 8-minute variant (`v4_guard_budget`) did not separate from the 5-minute one on the leaderboard.
 
 ## 6. Released resources
 
@@ -202,7 +203,7 @@ The repository (Apache-2.0) contains:
 - `g4 compare`: paired per-task comparison with an exact McNemar p-value.
 - `g4 splits`: frozen, stratified dev splits, including `sound40`.
 - `experiments/oracle_kaggle.json`, `oracle_local.json`, `empty_local.json`: per-task reference-fix outcomes (with failure reasons) and empty-patch outcomes.
-- A Kaggle eval-kernel generator that embeds the bundle and split for reproducible GPU runs, plus a CPU oracle kernel.
+- Kaggle eval and oracle kernel generators for reproducible runs.
 - Harness notes verified against source, the failure breakdowns, and the test-reset replay script.
 - All bundles of Section 2, the experiment log with bundle hashes, and the leaderboard analysis of Section 3.1.
 
