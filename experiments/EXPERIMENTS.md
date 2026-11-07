@@ -29,7 +29,7 @@ All three runs: Kaggle env (ceiling 18/30), scorer memory config (0.80), no serv
 | no patch | 11 | 9 never edited (still exploring at the 5-min wall) |
 
 ## Leaderboard submissions
-LB noise is about ±0.03–0.06: our identical resubmission of v4_guard_budget scored 0.13 then 0.10, and a public notebook's unchanged archive scored 0.12 / 0.10 / 0.06. A public notebook resubmitted one unchanged archive and got 0.12, 0.10 and 0.06. So a single submission cannot rank variants, and variants are compared on serial dev runs instead (ADR 0004).
+LB noise is about ±0.03–0.06: our identical resubmission of v4_guard_budget scored 0.13 then 0.10, and a public notebook's unchanged archive scored 0.12 / 0.10 / 0.06. So a single submission cannot rank variants, and variants are compared on serial dev runs instead (ADR 0004).
 
 Read with that caveat:
 - Both skill bundles trail the sample (0.08, 0.06).
@@ -48,6 +48,30 @@ Reading as of 2026-11-06: v2_noskill 0.13, v3_guard 0.10, v4_guard_budget 0.13 /
 
 ### Serial dev runs on harness 0.2.11 (pushed 2026-11-06)
 `v2_noskill` and `v2_fast` on `sound40`, concurrency 1, in parallel (kernels `g4-eval-v2-noskill-sound40-h0211`, `g4-eval-v2-fast-sound40-h0211`). They test paper claims 3 (skill vs shell) and 6 (does serial dev track the LB). The 2026-10-06 attempt crashed on the removed `swegemma.models.discovery`.
+
+Results (completed 2026-11-06 23:43 UTC; outputs in `results/kaggle/g4-eval-*-sound40-h0211-1106-2344/`). Ceiling is 40/40, because every `sound40` task passes with the reference fix on Kaggle.
+
+| bundle | hash | resolved | fastapi / rich / requests | session timeouts | median s / calls | eval time |
+|---|---|---|---|---|---|---|
+| `v2_noskill` | 64e7add9e296 | **20/40** | 12/17, 7/22, 1/1 | 14 | 286 / 24 | 2.8 h |
+| `v2_fast` | (swe skill) | 15/40 | 8/17, 6/22, 1/1 | 17 | 295 / 27 | 3.0 h |
+
+`g4 compare`: both 14, noskill only 6 (fastapi_11194, fastapi_14419, fastapi_14851, fastapi_15589, rich_3521, rich_3777), fast only 1 (rich_4079), neither 19. Exact McNemar **p = 0.125**. The direction agrees with the LB (0.13 vs 0.06), so claim 6 holds in direction, but the result is not significant.
+
+**Unsound task found:** `fastapi_14851` passes with an **empty patch** (noskill made 0 edits and called submit; the hidden tests ran 9 passed, exit 0). `v2_fast` timed out on it, so the tests never ran (exit -1). Excluding it: 19 vs 15, discordant 5 vs 1, p = 0.22. A sound split must also check that the empty patch fails. The other 39 tasks are not yet checked; that needs a CPU oracle run with an empty patch.
+
+Outcome breakdown (patch file contents):
+
+| outcome | noskill | fast |
+|---|---|---|
+| resolved | 20 | 15 |
+| no patch (10 / 11 of them timed out) | 11 | 12 |
+| scratch or test files only | 1 | 3 |
+| source patch, hidden tests fail (3 / 4 timed out) | 8 | 10 |
+
+Harness 0.2.11 observations:
+- A timed-out task that has a patch is still graded (exit 1); one without a patch gets exit -1. None of the 8 timed-out patches resolved.
+- `v2_fast` `rich_3772` took 604.65 s, about 2× the 5-min cap, while its scoring pytest timed out (exit 124). So a single task can exceed `max_time_minutes` by the verification timeout (300 s), and the 12 h projection should add that worst case.
 
 ### Serial dev plan on `sound40` (concurrency 1; compare with `g4 compare`)
 | order | bundle | single change vs v2_noskill | question |

@@ -1,7 +1,7 @@
 # Audit the Pipeline Before Tuning the Agent
 ### Measuring a declarative Gemma 4 coding agent under a noisy, hidden leaderboard
 
-<!-- Kaggle Writeup for gemma-4-developer-agent-paper. Limit: 3,000 words, references excluded. TODO(dev) marks numbers that the serial sound40 dev runs (pushed 2026-11-06) will fill in. -->
+<!-- Kaggle Writeup for gemma-4-developer-agent-paper. Limit: 3,000 words, references excluded. -->
 
 ## Abstract
 
@@ -10,7 +10,7 @@ The Gemma 4 Developer Agent competition scores a declarative agent bundle (promp
 1. Resubmitting an identical bundle moved its public score by 0.03 (0.13 → 0.10). A public bundle moved by up to 0.06. That is 2–4 of the ~58 public tasks, larger than every effect we tried to measure.
 2. The fraction of public tasks that the *reference fix itself* passes depends on the environment: 105/129 in Docker with per-task dependencies, 73/129 in Kaggle notebooks. Raw dev scores are uninterpretable without this ceiling.
 3. Reading agent trajectories, not scores, exposed a harness bug. Test-file edits by the agent were never reverted before grading, which made correct fixes fail. We replayed it in the scorer's Docker sandbox. The organizers fixed it independently six days later.
-4. A custom navigation skill that looked neutral-to-positive on public dev tasks coincided with our worst leaderboard scores.
+4. A custom navigation skill that looked neutral-to-positive on early dev tasks coincided with our worst leaderboard scores. A serial, paired run on 40 sound tasks agreed in direction (20 vs 15 resolved, 6 vs 1 discordant, p = 0.125).
 5. Half of all dev failures were agents that never made a source edit, not wrong edits.
 
 We release the toolkit that produced these results. It contains a bundle validator that encodes scorer pitfalls, per-environment reference-fix ceilings, a "sound" dev split, and a paired comparison tool.
@@ -98,7 +98,16 @@ Two variants run on the same tasks agree on most of them; only *discordant* task
 
 We also learned that dev runs must match the scorer's **sequential** execution. At concurrency 4, every turn is slower. That penalised the official sample's 1-minute budget so much that it scored 0/30 on dev, against ~0.12 on the leaderboard.
 
-TODO(dev): serial `sound40` results for `v2_noskill` and `v2_fast`, the paired table, and their agreement with the leaderboard ordering.
+We then ran `v2_noskill` and `v2_fast` serially on `sound40` with the scorer's budget (5 min, 40 calls), on harness 0.2.11:
+
+| | `v2_fast` resolved | `v2_fast` failed |
+|---|---|---|
+| **`v2_noskill` resolved** | 14 | 6 |
+| **`v2_noskill` failed** | 1 | 19 |
+
+`v2_noskill` resolved 20/40 and `v2_fast` 15/40. The two runs disagree on 7 tasks, 6 of them in `v2_noskill`'s favour (exact McNemar p = 0.125). The direction matches the leaderboard (0.13 vs 0.06), but even a 5-task gap on 40 tasks is not significant.
+
+The run exposed one more way a split can be unsound. `v2_noskill` "resolved" `fastapi_14851` without editing any file: the hidden tests pass on the unmodified repository. `v2_fast` timed out there, so it counted as a loss. A sound task needs two checks: the reference fix passes *and* the empty patch fails. Without that task: 19 vs 15, 5 vs 1 discordant (p = 0.22).
 
 ## 4. Auditing the harness
 
@@ -160,7 +169,7 @@ We have hypotheses, but no proof:
 - The skill's instruction block adds context to every request.
 - The scripts' heuristics were tuned on four public repositories.
 
-TODO(dev): paired `sound40` result for v2_fast vs v2_noskill.
+On serial `sound40` (Section 3.3), the skill-free bundle won 6 tasks and lost 1 (20 vs 15, p = 0.125). Dev and leaderboard agree in direction; neither proves it alone. Together they are our best-supported design result: on these budgets, the custom tool layer cost more than it saved. The skill run also timed out more often (17 vs 14 tasks).
 
 ### 5.2 Where the points go
 
@@ -179,7 +188,18 @@ We classified all 30 v2_fast dev trajectories:
 
 Fourteen of 30 tasks ended without any source edit. Only four failures were "the model wrote the wrong fix". The resolved tasks made their first edit at a median of call 9, about 120 s into the run. The prompt asked for an edit by call 6, and the model did not comply.
 
-This supports spending budget on *getting to an edit* rather than on verification. It matches a public finding that runs without a source edit by call 12 fail 87% of the time. Our 8-minute variant (`v4_guard_budget`) did not separate from the 5-minute one on the leaderboard. TODO(dev) if time allows.
+The pattern held on the sound split under harness 0.2.11, where environment gaps and the test-reset bug no longer apply:
+
+| outcome on `sound40` | `v2_noskill` | `v2_fast` |
+|---|---|---|
+| resolved | 20 | 15 |
+| no patch at all | 11 | 12 |
+| scratch or test files only | 1 | 3 |
+| source patch, hidden tests fail | 8 | 10 |
+
+In both runs, about half the failures are agents that produced no patch, almost all of them still exploring when the 5-minute limit hit.
+
+This supports spending budget on *getting to an edit* rather than on verification. It matches a public finding that runs without a source edit by call 12 fail 87% of the time. Our 8-minute variant (`v4_guard_budget`) did not separate from the 5-minute one on the leaderboard; we did not test it on dev.
 
 ## 6. Released resources
 
@@ -201,6 +221,7 @@ The repository (Apache-2.0) contains:
 ## 8. Limitations
 
 - **Tiny samples.** Our leaderboard evidence is single or double submissions on ~58 tasks, and our dev evidence is 30–40 tasks with one seed.
+- **`sound40` was filtered on the reference fix only.** One of its tasks passes with an empty patch (Section 3.3). We have not yet checked the other 39 against an empty patch.
 - **Public repositories differ from the hidden ones.** The public tasks come from four well-known open-source repositories, and the hidden tasks from private ones.
 - **The harness changed under us** (0.2.7 → 0.2.11), so leaderboard scores before and after 2026-10-12 aren't strictly comparable.
 - **Partly qualitative.** The test-reset finding is exact, but its effect on the hidden set was too small to see on the leaderboard.

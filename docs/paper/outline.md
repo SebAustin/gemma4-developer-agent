@@ -16,10 +16,10 @@ Thesis: with ±0.03–0.06 leaderboard noise, hidden repositories and one submis
 |---|---|---|---|
 | 1 | The public leaderboard can't rank variants: identical bundles move ±0.03–0.06 | ours: v4_guard_budget 0.13 / 0.10; public: 0.12 / 0.10 / 0.06 | more identical pairs from daily resubmissions |
 | 2 | The harness never reverts agent test edits, and edits overlapping the hidden test patch fail correct fixes | source trace + git pathspec repro + Docker replay of fastapi_14077 (docs/diagnosis/test-patch-conflicts.md); 3/30 dev tasks (v2_fast), 2/30 (v1) | paired sound40 run, v3_guard vs v2_noskill. LB: no detectable effect (0.10 vs 0.13, within noise) |
-| 3 | A custom navigation skill hurt on hidden repos, though it helped (slightly) on public dev | LB: skill 0.08 / 0.06 vs no-skill 0.13; dev30: v2_fast 6/30 > v1 5/30 | paired sound40: v2_fast vs v2_noskill |
-| 4 | Time-to-first-edit, not patch quality, is the main loss | v2_fast dev30: 14/30 tasks never made a source edit; only 4/30 patches wrong in behaviour or naming (EXPERIMENTS.md failure breakdown) | the same breakdown on serial sound40 runs |
+| 3 | A custom navigation skill hurt on hidden repos, though it helped (slightly) on public dev | LB: skill 0.08 / 0.06 vs no-skill 0.13; dev30: v2_fast 6/30 > v1 5/30 | done 2026-11-06: serial sound40 noskill 20/40 vs fast 15/40, discordant 6 vs 1, p = 0.125 (agrees in direction) |
+| 4 | Time-to-first-edit, not patch quality, is the main loss | v2_fast dev30: 14/30 tasks never made a source edit; only 4/30 patches wrong in behaviour or naming (EXPERIMENTS.md failure breakdown) | done: on sound40, no patch at all on 11/20 (noskill) and 12/25 (fast) failures |
 | 5 | Environment ceilings differ (local 105/129, Kaggle 73/129), so scores must be read against per-environment ceilings | `experiments/oracle_*.json` | — |
-| 6 | Serial dev runs on sound tasks with paired tests are a cheap, faithful proxy | design (ADR 0004) | serial v2_noskill on sound40 vs its LB 0.13; Spearman across ≥ 4 variants |
+| 6 | Serial dev runs on sound tasks with paired tests are a cheap, faithful proxy | design (ADR 0004) | 2 variants agree in order with the LB (not significant); sound split also needs an empty-patch check (fastapi_14851 passes empty) |
 
 ## Sections
 1. Setup: competition, harness, bundle constraints, compute (4×L4, 12 h, 1 submission/day).

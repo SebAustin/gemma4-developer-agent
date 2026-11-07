@@ -47,11 +47,11 @@ How many tasks resolve in a given environment when the agent applies the known-c
 _Avoid_: oracle score, upper bound, max score
 
 **Sound task**:
-A task whose reference fix resolves in the Kaggle environment, so a miss on it is the agent's fault, not the environment's. The `sound40` dev split holds only sound tasks.
+A task whose reference fix resolves in the Kaggle environment *and* whose empty patch fails. A miss on it is then the agent's fault, not the environment's, and a pass is the agent's credit, not the task's. The `sound40` split was built with the first check only. It contains at least one task that passes with an empty patch (`fastapi_14851`).
 _Avoid_: valid task, clean task
 
 **Verification timeout**:
-The limit on the scoring pytest run over a task's hidden test files. It is the bundle's `timeout_seconds`, the same value that caps each agent command.
+The limit on the scoring pytest run over a task's hidden test files. Since harness 0.2.11, it is the harness's own 300 s, separate from the bundle's `timeout_seconds` (which now caps agent commands only). Before 0.2.11, the two were the same value.
 _Avoid_: test timeout, command timeout (when the scoring run is meant)
 
 **Dev split**:
