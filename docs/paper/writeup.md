@@ -7,13 +7,13 @@
 
 The Gemma 4 Developer Agent competition scores a declarative agent bundle (prompts, skills, sampling and budgets for Gemma 4 31B) by how many hidden Python issues it resolves. It does so in a single 12-hour run over private repositories, with one submission a day. We report what one small team learned while trying to improve such an agent. Most of it concerns measurement, not the agent.
 
-1. Resubmitting an identical bundle moved its public score by 0.03 (0.13 → 0.10). A public bundle moved by up to 0.06. That is 2–4 of the ~58 public tasks, larger than every effect we tried to measure.
+1. Resubmitting an identical bundle moved its public score by 0.03 (0.13 → 0.10). A public bundle moved by up to 0.06. That is 2–4 of the ~58 public tasks, larger than every effect we tried to measure. Because the leaderboard keeps each team's best draw, scores rise with submission count.
 2. The fraction of public tasks that the *reference fix itself* passes depends on the environment: 105/129 in Docker with per-task dependencies, 73/129 in Kaggle notebooks. Raw dev scores are uninterpretable without this ceiling.
 3. Reading agent trajectories, not scores, exposed a harness bug. Test-file edits by the agent were never reverted before grading, which made correct fixes fail. We replayed it in the scorer's Docker sandbox. The organizers fixed it independently six days later.
 4. A custom navigation skill that looked neutral-to-positive on early dev tasks coincided with our worst leaderboard scores. A serial, paired run on 40 sound tasks agreed in direction (20 vs 15 resolved, 6 vs 1 discordant, p = 0.125).
 5. Half of all dev failures were agents that never made a source edit, not wrong edits.
 
-We release the toolkit that produced these results. It contains a bundle validator that encodes scorer pitfalls, per-environment reference-fix ceilings, a "sound" dev split, and a paired comparison tool.
+We release the toolkit behind these results: a bundle validator encoding scorer pitfalls, per-environment reference-fix ceilings, a "sound" dev split, and a paired comparison tool.
 
 ## 1. Introduction
 
@@ -22,10 +22,10 @@ Agent competitions with hidden test sets invite a familiar loop: change the prom
 - **The public leaderboard sees about half of them.** Each submission is a 12-hour GPU run, and teams get one a day.
 - **The harness is a moving target.** It is a set of wheels the organizers republished twice during the competition, sometimes under the same version number.
 
-We set out to improve the agent through prompts, custom tools and budget tuning, but our scores never left the 0.06–0.13 band. The measurement work we built to explain them produced findings that transfer to any team building agents against a hidden benchmark.
+We set out to improve the agent through prompts, custom tools and budget tuning, but our scores never left the 0.06–0.13 band. The measurement work built to explain them produced findings that transfer to any team facing a hidden benchmark.
 
 **Contributions.**
-1. A noise model of the public leaderboard, from repeated submissions of identical bundles.
+1. A noise model of the public leaderboard, from repeated submissions of identical bundles and from all teams' submission counts.
 2. Per-environment reference-fix ceilings, and the "sound split" they enable.
 3. A harness-audit method, reading trajectories against harness source, that found a scoring bug with a reproducible replay.
 4. Single-factor agent ablations, read against that noise.
@@ -33,13 +33,7 @@ We set out to improve the agent through prompts, custom tools and budget tuning,
 
 ## 2. Setting
 
-**Bundle.** A submission is a zip containing:
-- `agent.yaml`: one ADK `LlmAgent` bound to `gemma-4-31b-it-qat-w4a16-ct`, plus optional sub-agents;
-- prompts;
-- optional skills (instructions plus Python scripts run inside the task sandbox);
-- sampling settings;
-- optional LoRA adapters;
-- `eval_config.yaml`, with per-task limits on time, tool calls, turns and command timeout.
+**Bundle.** A submission is a zip with `agent.yaml` (one ADK `LlmAgent` bound to `gemma-4-31b-it-qat-w4a16-ct`, plus optional sub-agents), prompts, optional skills (instructions plus Python scripts run inside the task sandbox), sampling settings, optional LoRA adapters, and `eval_config.yaml` (per-task limits on time, tool calls, turns and command timeout).
 
 There is no agent code. The harness (`swegemma`/`adk_submission`) compiles the YAML into an ADK agent with fixed tools: `run_command`, `read_file`, `edit_file`, `write_file`, `get_status`, `submit_patch`, and three code-graph tools.
 
@@ -70,9 +64,20 @@ There is no agent code. The harness (`swegemma`/`adk_submission`) compiles the Y
 
 ![Figure 1](figures/fig1_leaderboard_noise.png)
 
-With ~58 public tasks, one task is worth 0.017. A spread of 0.03–0.06 is therefore 2–4 tasks. Sampling at temperature 0.2–0.3 and early-branching trajectories make this unsurprising, but easy to forget when each data point costs a day.
+With ~58 public tasks, one task is worth 0.017. A spread of 0.03–0.06 is therefore 2–4 tasks, easy to forget when each data point costs a day.
 
 All our between-bundle differences fall inside this spread, except the two skill bundles against the rest (Section 5.1). Our rule: a single leaderboard comparison is never evidence. Leaderboard slots serve to confirm large dev effects and to estimate noise.
+
+**The leaderboard rewards submitting often.** It shows each team's *best* score, so every submission is another draw from this spread, the adaptive effect of [7]. Across all 5,003 teams (snapshot of 2026-11-07), the score rises with the number of submissions:
+
+| submissions | teams | mean best score | share ≥ 0.22 |
+|---|---|---|---|
+| 1 | 927 | 0.089 | 0.0% |
+| 3–4 | 934 | 0.128 | 0.2% |
+| 10–19 | 918 | 0.167 | 3.4% |
+| 20–49 | 419 | 0.183 | 8.8% |
+
+Teams at ≥ 0.22 made a median of 19 submissions; teams at our 0.12–0.13, a median of 3. Effort confounds this, but the strongest public notebooks share one recipe whose identical files score 7–13 of 58 tasks across draws, about 10 on average by their authors' counts. The 0.22–0.24 cluster is mostly best draws, about 3 tasks above our mean, not 7.
 
 ### 3.2 Reference-fix ceilings per environment
 
@@ -83,9 +88,7 @@ Before measuring any agent, we ran every public task through the *real harness* 
 | Docker sandbox, per-task dependency set | 105/129 | requests tests need network; rich rendering is version-sensitive |
 | Kaggle notebook (subprocess sandbox) | 73/129 | missing test dependencies (35: `inline_snapshot` 27, `dirty_equals` 7, other 1), version differences (13), network (8) |
 
-The Docker number needed two local fixes first:
-- **Package shadowing.** The public wheels include the benchmark repositories themselves. Installed into site-packages, they make tests import the *released* package instead of the patched copy, so a correct patch is ignored.
-- **Highest-version selection.** The harness keeps the highest version of each wheel, which pulls an incompatible starlette into older fastapi commits.
+The Docker number needed two local fixes. **Package shadowing:** the public wheels include the benchmark repositories themselves, so tests import the *released* package and ignore a correct patch. **Highest-version selection:** the harness keeps each wheel's highest version, pulling an incompatible starlette into older fastapi commits.
 
 Per-task wheel sets that drop the repository's own package and respect its pins raised the oracle from 1/5 to 5/5 on a smoke split.
 
@@ -95,12 +98,9 @@ Our first dev runs scored 5–6 of 30 tasks. That reads as 17–20%, but only 18
 
 ### 3.3 Paired comparison and serial runs
 
-Two variants run on the same tasks agree on most of them; only *discordant* tasks carry information. We compare runs task by task with an exact McNemar (binomial) test. Our earlier comparison, v1 against v2_fast on 30 tasks, shows why this matters:
-- v2_fast resolved every task v1 did, plus one;
-- headline: 6 vs 5;
-- p = 1.0.
+Two variants run on the same tasks agree on most of them; only *discordant* tasks carry information. We compare runs task by task with an exact McNemar (binomial) test. Our earlier comparison shows why: on 30 tasks, v2_fast resolved every task v1 did plus one (6 vs 5), p = 1.0.
 
-We also learned that dev runs must match the scorer's **sequential** execution. At concurrency 4, every turn is slower. That penalised the official sample's 1-minute budget so much that it scored 0/30 on dev, against ~0.12 on the leaderboard.
+Dev runs must also match the scorer's **sequential** execution: at concurrency 4 every turn is slower, which penalised the official sample's 1-minute budget so much that it scored 0/30 on dev, against ~0.12 on the leaderboard.
 
 We then ran `v2_noskill` and `v2_fast` serially on `sound40` with the scorer's budget (5 min, 40 calls), on harness 0.2.11:
 
@@ -151,13 +151,13 @@ Each of these cost us or other teams a run, and each is now a check in our valid
 - **Templating.** ADK treats any `{identifier}` in an instruction as a session-state key. A missing key raises `KeyError` at the first model call and fails the task. Only `{problem_description}` and `{hints?}` exist.
 - **The 32k request limit.** vLLM rejects prompt + `max_output_tokens` > 32,768, killing long tasks. Keep output at ≤ 8,192 (first noted publicly).
 - **The 12-hour cliff.** Exceeding 12 hours errors the whole submission rather than zeroing unfinished tasks. Our check projects 120 × (cap + 1 min setup) and warns.
-- **Verification timeout (a null result).** Before 0.2.11, the bundle's `timeout_seconds` also bounded the scoring pytest run, and a public notebook warned it could fail correct patches. Measured over all 129 public tasks, scoring pytest took at most 9.2 s (mean 1.0 s), so this was not a real risk on these repositories. Version 0.2.11 decouples the two.
+- **Verification timeout (a null result).** Before 0.2.11, `timeout_seconds` also bounded the scoring pytest run, which a public notebook warned could fail correct patches. Over all 129 public tasks, scoring pytest took at most 9.2 s (mean 1.0 s).
 
 ## 5. Agent design under noise
 
 ### 5.1 A navigation skill that looked fine on dev
 
-Skills are the only way to ship custom tools in a declarative bundle. Our `swe` skill ranked files for an issue (BM25 plus definition and path bonuses), printed symbol definitions and outlines, ran targeted tests, and checked the patch before submitting. It had unit tests, capped its output, and its calls didn't count against the tool budget.
+Skills are the only way to ship custom tools in a declarative bundle. Our `swe` skill ranked files for an issue (BM25 plus definition and path bonuses), printed symbol definitions and outlines, ran targeted tests, and checked the patch before submitting.
 
 | bundle | dev30 (Kaggle env, ceiling 18) | public leaderboard |
 |---|---|---|
@@ -166,31 +166,17 @@ Skills are the only way to ship custom tools in a declarative bundle. Our `swe` 
 | v2_fast (skill) | 6/30 | 0.06 |
 | v2_noskill (same prompt, shell only) | — | 0.13 |
 
-\* run at concurrency 4, which penalises the 1-minute budget (Section 3.3).
+\* concurrency 4 (Section 3.3).
 
 The two skill bundles are our two lowest scores. Removing the skill while keeping the prompt gave our best. This is the only gap that survives the noise floor (0.06–0.08 vs 0.13), and even it rests on single submissions.
 
-We have hypotheses, but no proof:
-- Skill calls don't count against the call cap, yet they consume wall-clock time.
-- The skill's instruction block adds context to every request.
-- The scripts' heuristics were tuned on four public repositories.
+Plausible causes, unproven: skill calls bypass the call cap but not the clock, the skill's instructions lengthen every request, and its heuristics were tuned on four public repositories.
 
 On serial `sound40` (Section 3.3), the skill-free bundle won 6 tasks and lost 1 (20 vs 15, p = 0.125). Dev and leaderboard agree in direction; neither proves it alone. Together they are our best-supported design result: on these budgets, the custom tool layer cost more than it saved. The skill run also timed out more often (17 vs 14 tasks).
 
 ### 5.2 Where the points go
 
-We classified all 30 v2_fast dev trajectories:
-
-| outcome | tasks |
-|---|---|
-| resolved | 6 |
-| never made a source edit (still exploring at the 5-min limit) | 11 |
-| patch with scratch files only | 3 |
-| patch blocked by the test-reset bug | 3 |
-| patch, environment gap (missing `inline_snapshot`) | 1 |
-| patch, missing public name (one never stated in the issue; one variant skipped) | 2 |
-| patch, wrong behaviour | 2 |
-| other (no test output; timeout) | 2 |
+Of the 30 v2_fast dev trajectories, 6 resolved and 11 never made a source edit. Of the rest, 3 shipped scratch files only, 3 were blocked by the test-reset bug, 1 hit an environment gap, 4 were wrong fixes (two needed a public name the issue never states) and 2 were other.
 
 Fourteen of 30 tasks ended without any source edit. Only four failures were "the model wrote the wrong fix". The resolved tasks made their first edit at a median of call 9, about 120 s into the run. The prompt asked for an edit by call 6, and the model did not comply.
 
@@ -217,8 +203,8 @@ The repository (Apache-2.0) contains:
 - `g4 splits`: frozen, stratified dev splits, including `sound40`.
 - `experiments/oracle_kaggle.json`, `oracle_local.json`, `empty_local.json`: per-task reference-fix outcomes (with failure reasons) and empty-patch outcomes.
 - A Kaggle eval-kernel generator that embeds the bundle and split for reproducible GPU runs, plus a CPU oracle kernel.
-- Harness notes verified against source: templating, skill execution, wheel shadowing, scorer facts. Also the trajectory-based failure breakdown and the replay script for the test-reset bug.
-- All bundles of Section 2 and the experiment log with bundle hashes.
+- Harness notes verified against source, the failure breakdowns, and the test-reset replay script.
+- All bundles of Section 2, the experiment log with bundle hashes, and the leaderboard analysis of Section 3.1.
 
 ## 7. Related work
 
@@ -232,11 +218,9 @@ The repository (Apache-2.0) contains:
 - **`sound40` was filtered on the reference fix only.** Two of its tasks pass with an empty patch (Section 3.3). We found them after the runs and report results with and without them.
 - **Public repositories differ from the hidden ones.** The public tasks come from four well-known open-source repositories, and the hidden tasks from private ones.
 - **The harness changed under us** (0.2.7 → 0.2.11), so leaderboard scores before and after 2026-10-12 aren't strictly comparable.
-- **Partly qualitative.** The test-reset finding is exact, but its effect on the hidden set was too small to see on the leaderboard.
-
 ## Acknowledgements
 
-The tooling, experiments and analysis were developed with the help of an AI coding assistant (Claude). Public notebooks by other participants ("Budget-Fit Single Agent", "Measure Before You Tune") contributed the 32k-limit and leaderboard-noise observations, credited where used.
+The tooling, experiments and analysis were developed with the help of an AI coding assistant (Claude). Public notebooks by other participants ("Budget-Fit Single Agent", "Measure Before You Tune", "Task Soundness, Serving and Evaluation") contributed the 32k-limit, leaderboard-noise and per-draw observations, credited where used.
 
 ## References
 
