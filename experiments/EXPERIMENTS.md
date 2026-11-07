@@ -106,7 +106,7 @@ Results (2026-11-07; outputs in `results/kaggle/g4-eval-v{5-budgetfit,6-issue-re
 - **Earlier thinking is replayed every turn:** with `include_thoughts: true` the next prompt grows by a median 1.12× the previous completion (`v5`, completions > 300 tokens); generated tokens make about 40% of prompt growth before the first compaction. On 0.2.11 `include_thoughts: false` keeps reasoning but strips it from history, so it should slow prompt growth and delay compaction. Its sign on resolves is still unknown.
 - Compaction counter used here (prompt tokens fall > 30% after reaching 14,336) finds 30/40 on `v2_noskill`, where the earlier count found 31/40. Script: `scripts/trace_stats.py <results dir>`.
 
-Next candidates on `sound71` (rendered, **not pushed**; each costs about 5.5 GPU-h and needs the go-ahead):
+Next candidates on `sound71` (both pushed 2026-11-07 19:03 UTC as v1, user go-ahead; about 5.5 GPU-h each; embedded bundles decoded and diffed against `submissions/` before the push):
 
 | bundle | hash | change vs `v5` | why | kernel dir |
 |---|---|---|---|---|
