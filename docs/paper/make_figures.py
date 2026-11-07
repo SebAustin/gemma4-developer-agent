@@ -32,7 +32,7 @@ LEADERBOARD = {
     "public bundle, same archive ×3": [0.12, 0.10, 0.06],
     "v4_guard_budget, same archive ×2": [0.13, 0.10],
     "v3_guard": [0.10],
-    "v2_noskill": [0.13],
+    "v2_noskill, same archive ×2": [0.13, 0.12],
     "v1_scaffold (skill)": [0.08],
     "v2_fast (skill)": [0.06],
 }

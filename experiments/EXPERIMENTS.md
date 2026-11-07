@@ -37,7 +37,7 @@ Read with that caveat:
 
 The one-factor-per-day LB ablation plan of 2026-10-05 is superseded.
 
-Reading as of 2026-11-06: v2_noskill 0.13, v3_guard 0.10, v4_guard_budget 0.13 / 0.10. The leaderboard shows **no detectable effect** of the guard. The mechanism stays confirmed by the Docker replay (docs/diagnosis/test-patch-conflicts.md); its size on the hidden repos is unknown.
+Reading as of 2026-11-07: v2_noskill 0.13 / 0.12 (second on harness 0.2.11), v3_guard 0.10, v4_guard_budget 0.13 / 0.10. The leaderboard shows **no detectable effect** of the guard. The mechanism stays confirmed by the Docker replay (docs/diagnosis/test-patch-conflicts.md); its size on the hidden repos is unknown.
 
 ### Public evidence (2026-10-06, read from notebooks; not reproduced by us)
 | source | config | reported |
@@ -93,7 +93,7 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
-| 2026-11-06 | 58068665 | 64e7add9e296 | pending | v2_noskill resubmission, **harness swegemma 0.2.11** (rows below were scored on 0.2.7 unless noted) |
+| 2026-11-06 | 58068665 | 64e7add9e296 | **0.12** | v2_noskill identical resubmission (0.13 on 0.2.7), **harness swegemma 0.2.11**; within the noise floor (rows below were scored on 0.2.7 unless noted) |
 | 2026-10-08 | 56958315 | 689a8fb46e18 | **0.10** | v4_guard_budget, identical resubmission: 0.13 then 0.10, so our own leaderboard noise is ±0.03 (2 tasks of ~58) |
 | 2026-10-07 | 56893672 | 689a8fb46e18 | **0.13** | v4_guard_budget: v3_guard + 240 s, 8 min / 28 calls / 80 turns; finished inside 12 h; ties v2_noskill (within the ±0.06 noise) |
 | 2026-10-06 | 56885293 | adce53d47bc8 | **0.10** (rerun by the host after the 2026-10-06 Kaggle error wave; requested in discussion 743683) | v3_guard: v2_noskill + ship check (reverts test/config edits, removes scratch files); docs/diagnosis/test-patch-conflicts.md |

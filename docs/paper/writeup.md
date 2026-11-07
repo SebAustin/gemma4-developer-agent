@@ -66,7 +66,7 @@ There is no agent code. The harness (`swegemma`/`adk_submission`) compiles the Y
 |---|---|
 | public bundle (another team, unchanged archive) | 0.12, 0.10, 0.06 |
 | `v4_guard_budget` (ours, identical resubmission) | 0.13, 0.10 |
-| `v2_noskill` (ours) | 0.13, TODO(LB 58068665, harness 0.2.11) |
+| `v2_noskill` (ours) | 0.13, 0.12 (on harness 0.2.11) |
 
 ![Figure 1](figures/fig1_leaderboard_noise.png)
 
