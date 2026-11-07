@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from .compare import compare_runs, load_results
+from .compare import compare_runs, load_results, run_label
 from .kaggle_ops import render_kernel, render_oracle_kernel, render_submission_kernel
 from .package import PackagingError, bundle_hash, package_bundle
 from .splits import write_splits
@@ -42,7 +42,7 @@ def _cmd_splits(args: argparse.Namespace) -> int:
 
 def _cmd_compare(args: argparse.Namespace) -> int:
     result = compare_runs(load_results(args.run_a), load_results(args.run_b))
-    print(result.format(Path(args.run_a).name, Path(args.run_b).name))
+    print(result.format(run_label(args.run_a), run_label(args.run_b)))
     return 0
 
 

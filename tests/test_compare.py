@@ -40,3 +40,10 @@ def test_runs_without_shared_tasks_report_zero_pairs_instead_of_crashing():
     report = comparison.format()
 
     assert "paired tasks: 0" in report and comparison.p_value == 1.0
+
+
+@pytest.mark.parametrize("suffix", ["", "results", "results/task_results.jsonl"])
+def test_run_label_names_the_run_directory_not_its_results_folder(tmp_path, suffix):
+    from g4agent.compare import run_label
+
+    assert run_label(tmp_path / "g4-eval-v5-sound71" / suffix) == "g4-eval-v5-sound71"

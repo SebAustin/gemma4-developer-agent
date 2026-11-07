@@ -18,6 +18,17 @@ ERROR_LABEL_CHARS = 45
 TOP_ERRORS = 3
 
 
+GENERIC_PARTS = frozenset({"results", "task_results.jsonl"})
+
+
+def run_label(run: str | Path) -> str:
+    """Short display name of a run: its directory, skipping a trailing ``results/task_results.jsonl``."""
+    path = Path(run)
+    while path.name in GENERIC_PARTS and path.parent != path:
+        path = path.parent
+    return path.name
+
+
 def load_results(run: str | Path) -> list[dict]:
     """Rows of ``task_results.jsonl`` from a run directory (searched recursively) or the file itself."""
     run = Path(run)

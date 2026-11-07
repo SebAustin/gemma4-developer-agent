@@ -94,8 +94,24 @@ Harness 0.2.11 observations:
 
 | bundle | hash | change vs base | kernel | resolved |
 |---|---|---|---|---|
-| `v5_budgetfit` | a975adbcd250 | public Budget-Fit recipe, unchanged (attribution in `submissions/ATTRIBUTION.md`) | `g4-eval-v5-budgetfit-sound71` v1 | pending |
-| `v6_issue_recovery` | e0883c598cf0 | prompt only: issue copied into the system prompt + `git diff` recovery after history compaction; malformed `edit_file` recovery via `run_command`; "Baseline LB 0.24" edits (protect `pytest.ini`/`conftest.py`, change every sync/async variant, `git status --short && git diff` before submit), scratch scripts under `/tmp` | `g4-eval-v6-issue-recovery-sound71` v1 | pending |
+| `v5_budgetfit` | a975adbcd250 | public Budget-Fit recipe, unchanged (attribution in `submissions/ATTRIBUTION.md`) | `g4-eval-v5-budgetfit-sound71` v1 | **29/71** |
+| `v6_issue_recovery` | e0883c598cf0 | prompt only: issue copied into the system prompt + `git diff` recovery after history compaction; malformed `edit_file` recovery via `run_command`; "Baseline LB 0.24" edits (protect `pytest.ini`/`conftest.py`, change every sync/async variant, `git status --short && git diff` before submit), scratch scripts under `/tmp` | `g4-eval-v6-issue-recovery-sound71` v1 | **28/71** |
+
+Results (2026-11-07; outputs in `results/kaggle/g4-eval-v{5-budgetfit,6-issue-recovery}-sound71-h0211-1107`):
+- **`v6` vs `v5`:** both 26, `v5` only 3 (fastapi_15589, fastapi_9555, rich_3278), `v6` only 2 (fastapi_14419, fastapi_5624), neither 40; exact McNemar p = 1.0. `v5` keeps the slot (ADR 0008). `v6` is rejected as a bundle.
+- **What `v6` cost:** eval 5.70 h vs 5.37 h (mean 289 s vs 272 s per task). The issue copy enlarges every request, so compaction fired in 56/71 tasks (median first at agent step 14) against 47/71 (step 16). Its rules did run: `git status --short` after a compaction in 11/56 tasks, and malformed-`edit_file` replies fell from 76 (9 tasks) to 29 (11 tasks). The malformed-edit rule is worth keeping without the issue copy.
+- **The call cap binds more than the time cap:** 20/71 `v5` tasks used all 28 calls (2 resolved), 27/71 in `v6` (4 resolved). Duration ≥ 8 min: 10 in `v5` (1 resolved), 12 in `v6` (2 resolved).
+- **`v5` vs `v2_noskill` on the 38 shared tasks** (runs a day apart, different budgets: noskill 5 min / 40 calls / thinking 1536 / T 0.3): `v2_noskill` 18, `v5` 14; noskill only 5 (fastapi_14419, fastapi_14873, fastapi_5624, rich_3521, rich_3777), `v5` only 1 (rich_3278); p = 0.22. Three of the five hit `v5`'s 28-call cap; noskill solved them in 23–27 calls. `v5` vs `v2_fast`: 14 vs 14. This runs against the leaderboard (Budget-Fit census mean 0.166 over 10 draws, ours 0.12–0.13), so dev and LB disagree on this pair; our own `v5` draws decide it.
+- **Scorer time:** 120 tasks × mean task time = 9.1 h (`v5`), 9.6 h (`v6`), 8.4 h (`v2_noskill`), before setup and slow-scorer days.
+- **Earlier thinking is replayed every turn:** with `include_thoughts: true` the next prompt grows by a median 1.12× the previous completion (`v5`, completions > 300 tokens); generated tokens make about 40% of prompt growth before the first compaction. On 0.2.11 `include_thoughts: false` keeps reasoning but strips it from history, so it should slow prompt growth and delay compaction. Its sign on resolves is still unknown.
+- Compaction counter used here (prompt tokens fall > 30% after reaching 14,336) finds 30/40 on `v2_noskill`, where the earlier count found 31/40. Script: `scripts/trace_stats.py <results dir>`.
+
+Next candidates on `sound71` (rendered, **not pushed**; each costs about 5.5 GPU-h and needs the go-ahead):
+
+| bundle | hash | change vs `v5` | why | kernel dir |
+|---|---|---|---|---|
+| `v7_no_thoughts` | 513241012bc3 | `include_thoughts: false` | earlier thinking makes ~25% of prompt growth (40% generated × ~60% thinking); stripping it should delay compaction and shorten prefill | `kaggle/runs/g4-eval-v7-no-thoughts-sound71` |
+| `v7_calls40` | c2a7ea4b9328 | 40 calls (prompt text matches), thinking 1536 | the 28-call cap ends 28% of tasks (2/20 resolved); `v2_noskill`'s budget won 5–1 on the shared tasks. Thinking 1536 pays for the extra calls: 40 calls at 4096 would project ~10.3 h, too close to 12 h | `kaggle/runs/g4-eval-v7-calls40-sound71` |
 
 Lever analysis behind `v6` (2026-11-07, harness source + all 80 `sound40` traces, each lever checked by a skeptic):
 - **History compaction** (scorer config, ADK `EventsCompactionConfig`): at 14,336 prompt tokens all but the last 5 events are summarized, text only, ~25 s per summary. Fired in 31/40 noskill tasks at a median of call 19; exact-repeat tool calls rose from 8% to 17% after it. Estimated 0 to +2.
