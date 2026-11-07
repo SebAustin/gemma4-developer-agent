@@ -34,7 +34,7 @@ def _cmd_package(args: argparse.Namespace) -> int:
 
 
 def _cmd_splits(args: argparse.Namespace) -> int:
-    splits = write_splits(args.tasks, args.out, oracle_path=args.oracle, force=args.force)
+    splits = write_splits(args.tasks, args.out, oracle_path=args.oracle, empty_path=args.empty, force=args.force)
     for name, ids in splits.items():
         print(f"{name:14s} {len(ids):4d} tasks")
     return 0
@@ -88,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default=str(ROOT / "experiments" / "splits.json"))
     p.add_argument("--oracle", default=str(ROOT / "experiments" / "oracle_kaggle.json"),
                    help="reference-fix results; their resolvable tasks form the sound40 split")
+    p.add_argument("--empty", default=str(ROOT / "experiments" / "empty_local.json"),
+                   help="empty-patch results; resolvable tasks that fail with an empty patch form sound<N>")
     p.add_argument("--force", action="store_true")
     p.set_defaults(func=_cmd_splits)
 

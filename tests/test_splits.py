@@ -82,3 +82,36 @@ def test_sound_split_keeps_the_repo_mix_of_the_resolvable_tasks(tasks):
     sound = make_splits(tasks, resolvable=resolvable)["sound40"]
 
     assert sum(i.startswith("big") for i in sound) == 27 and sum(i.startswith("mid") for i in sound) == 13
+
+
+def test_full_sound_split_drops_tasks_that_pass_with_an_empty_patch(tasks):
+    resolvable = {t["instance_id"] for t in tasks[:70]}
+    empty_pass = {tasks[0]["instance_id"], tasks[5]["instance_id"]}
+
+    splits = make_splits(tasks, resolvable=resolvable, empty_pass=empty_pass)
+
+    assert splits["sound68"] == sorted(resolvable - empty_pass)
+
+
+def test_no_full_sound_split_without_the_empty_patch_check(tasks):
+    resolvable = {t["instance_id"] for t in tasks[:70]}
+
+    splits = make_splits(tasks, resolvable=resolvable)
+
+    assert not any(name.startswith("sound") and name != "sound40" for name in splits)
+
+
+def test_write_splits_adds_the_full_sound_split_from_the_empty_patch_file(tasks, tmp_path):
+    tasks_path = tmp_path / "tasks.jsonl"
+    tasks_path.write_text("\n".join(json.dumps(t) for t in tasks))
+    out = tmp_path / "splits.json"
+    oracle = tmp_path / "oracle.json"
+    oracle.write_text(json.dumps({"resolvable": [t["instance_id"] for t in tasks[:70]]}))
+    frozen = write_splits(tasks_path, out, oracle_path=oracle)
+    empty = tmp_path / "empty.json"
+    empty.write_text(json.dumps({"passes_with_empty_patch": [tasks[1]["instance_id"]]}))
+
+    splits = write_splits(tasks_path, out, oracle_path=oracle, empty_path=empty)
+
+    assert {k: splits[k] for k in frozen} == frozen
+    assert len(splits["sound69"]) == 69 and tasks[1]["instance_id"] not in splits["sound69"]

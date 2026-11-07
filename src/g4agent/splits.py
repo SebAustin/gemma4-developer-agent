@@ -60,11 +60,18 @@ def stratified_sample(tasks: list[dict], n: int) -> list[str]:
     return sorted(picked)
 
 
-def make_splits(tasks: list[dict], resolvable: set[str] | None = None) -> dict[str, list[str]]:
+def make_splits(tasks: list[dict], resolvable: set[str] | None = None,
+                empty_pass: set[str] | None = None) -> dict[str, list[str]]:
     splits = {name: stratified_sample(tasks, size) for name, size in SPLIT_SIZES.items()}
     if resolvable is not None:
         # Sound tasks: the reference fix resolves them in the Kaggle env, so a miss is the agent's.
         splits["sound40"] = stratified_sample([t for t in tasks if t["instance_id"] in resolvable], SOUND_SIZE)
+        if empty_pass is not None:
+            # Every fully sound task: the reference fix passes *and* the empty patch fails. Named by
+            # size, so new oracle data yields a new split instead of changing a frozen one.
+            ids = sorted(t["instance_id"] for t in tasks
+                         if t["instance_id"] in resolvable and t["instance_id"] not in empty_pass)
+            splits[f"sound{len(ids)}"] = ids
     splits["full"] = sorted(t["instance_id"] for t in tasks)
     # Repo-held-out split for measuring generalization to unseen repos (the test set is
     # drawn from private repos): train on everything except rich, evaluate on rich.
@@ -72,16 +79,21 @@ def make_splits(tasks: list[dict], resolvable: set[str] | None = None) -> dict[s
     return splits
 
 
+def _read_id_list(path: str | Path, key: str, expected: str) -> set[str]:
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if key not in data:
+        raise ValueError(f"{path} has no {key!r} list (expected {expected})")
+    return set(data[key])
+
+
 def write_splits(tasks_path: str | Path, out_path: str | Path, *, oracle_path: str | Path | None = None,
-                 force: bool = False) -> dict[str, list[str]]:
+                 empty_path: str | Path | None = None, force: bool = False) -> dict[str, list[str]]:
     """Write the splits; new split names may be added, existing ones must not change."""
-    resolvable = None
-    if oracle_path is not None:
-        oracle = json.loads(Path(oracle_path).read_text(encoding="utf-8"))
-        if "resolvable" not in oracle:
-            raise ValueError(f"{oracle_path} has no 'resolvable' list (expected an oracle kernel result)")
-        resolvable = set(oracle["resolvable"])
-    splits = make_splits(load_tasks(tasks_path), resolvable)
+    resolvable = None if oracle_path is None else _read_id_list(
+        oracle_path, "resolvable", "an oracle kernel result")
+    empty_pass = None if empty_path is None else _read_id_list(
+        empty_path, "passes_with_empty_patch", "an empty-patch replay result")
+    splits = make_splits(load_tasks(tasks_path), resolvable, empty_pass)
     out = Path(out_path)
     if out.exists() and not force:
         existing = json.loads(out.read_text(encoding="utf-8"))
