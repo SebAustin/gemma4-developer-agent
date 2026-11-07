@@ -58,6 +58,14 @@ _Avoid_: oracle score, upper bound, max score
 A task whose reference fix resolves in the Kaggle environment *and* whose empty patch fails. A miss on it is then the agent's fault, not the environment's, and a pass is the agent's credit, not the task's. The `sound40` split was built with the first check only. It contains two tasks that pass with an empty patch (`fastapi_14851`, `fastapi_14077`).
 _Avoid_: valid task, clean task
 
+**History compaction**:
+Once a task's prompt reaches 14,336 tokens, the scorer replaces all but the agent's last five events with a model-written summary that keeps only text. Tool outputs and the verbatim issue are lost, and the summary itself costs about 25 s. It happened in 31 of 40 `sound40` tasks of `v2_noskill`, at a median of tool call 19.
+_Avoid_: truncation, context reset
+
+**Working-tree fallback**:
+If a task ends (time, calls or turns) before the agent calls `submit_patch`, the scorer grades the diff of the working tree as it stands, with test and configuration files stripped. A submitted patch, by contrast, is final.
+_Avoid_: anytime patch, auto-submit
+
 **Verification timeout**:
 The limit on the scoring pytest run over a task's hidden test files. Since harness 0.2.11, it is the harness's own 300 s, separate from the bundle's `timeout_seconds` (which now caps agent commands only). Before 0.2.11, the two were the same value.
 _Avoid_: test timeout, command timeout (when the scoring run is meant)
