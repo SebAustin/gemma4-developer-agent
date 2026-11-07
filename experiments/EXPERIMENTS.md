@@ -39,6 +39,20 @@ The one-factor-per-day LB ablation plan of 2026-10-05 is superseded.
 
 Reading as of 2026-11-07: v2_noskill 0.13 / 0.12 (second on harness 0.2.11), v3_guard 0.10, v4_guard_budget 0.13 / 0.10. The leaderboard shows **no detectable effect** of the guard. The mechanism stays confirmed by the Docker replay (docs/diagnosis/test-patch-conflicts.md); its size on the hidden repos is unknown.
 
+### Leaderboard score vs submission count (public LB snapshot 2026-11-07 12:00 UTC, 5,003 teams)
+The leaderboard shows each team's **best** public score, so a team that submits more draws more often from the ±0.03–0.06 noise.
+
+| submissions | teams | mean | median | p90 | share ≥ 0.22 |
+|---|---|---|---|---|---|
+| 1 | 927 | 0.089 | 0.10 | 0.17 | 0.0% |
+| 2 | 691 | 0.109 | 0.12 | 0.17 | 0.3% |
+| 3–4 | 934 | 0.128 | 0.15 | 0.18 | 0.2% |
+| 5–9 | 1114 | 0.148 | 0.17 | 0.18 | 0.4% |
+| 10–19 | 918 | 0.167 | 0.17 | 0.20 | 3.4% |
+| 20–49 | 419 | 0.183 | 0.18 | 0.20 | 8.8% |
+
+Spearman(score, submissions) = 0.59. The 77 teams at ≥ 0.22 have a median of 19 submissions; the 782 teams at 0.12–0.13 have a median of 3 (we have 7). Effort confounds this (teams that iterate more also submit more), but it matches the public census: every top public notebook is the same single-agent recipe (240 s / 28 calls / 8 min / 80 turns, T 0.2, no top_k, out 8192, thinking 4096), and identical files score 7–13 of 58 tasks across draws, mean ≈ 10/58 (0.17) for Budget-Fit over 10 draws (author's census). Our four scored draws average 7.25/58 (0.125). The real gap is about 3 tasks, not 7.
+
 ### Public evidence (2026-10-06, read from notebooks; not reproduced by us)
 | source | config | reported |
 |---|---|---|

@@ -42,6 +42,10 @@ _Avoid_: grader, metric, evaluator
 The spread of public leaderboard scores between submissions of the same bundle. Measured at ±0.03 (our two runs of one bundle) to ±0.06 (a public bundle run three times), that is 2–4 of the ~58 public tasks. Score gaps smaller than this say nothing about which variant is better.
 _Avoid_: variance, randomness, luck
 
+**Public leaderboard score**:
+A team's best score over all its submissions on the public tasks. Because each submission is a fresh draw from the leaderboard noise, it rises with the number of submissions even when the bundle does not change. Compare bundles by the mean of their draws, never by a team's public leaderboard score.
+_Avoid_: LB score (when one submission's score is meant), rank
+
 **Environment**:
 Where a task's tests execute, defined by the packages they can import. There are three, and they differ: the **local environment** (our Docker sandbox), the **Kaggle environment** (a Kaggle notebook's sandbox) and the **scoring environment** (the scorer's).
 _Avoid_: setup, platform
