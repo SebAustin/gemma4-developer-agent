@@ -172,7 +172,7 @@ The two skill bundles are our two lowest scores. Removing the skill while keepin
 
 Plausible causes, unproven: skill calls bypass the call cap but not the clock, the skill's instructions lengthen every request, and its heuristics were tuned on four public repositories.
 
-On serial `sound40` (Section 3.3), the skill-free bundle won 6 tasks and lost 1 (20 vs 15, p = 0.125). Dev and leaderboard agree in direction; neither proves it alone. Together they are our best-supported design result: on these budgets, the custom tool layer cost more than it saved. The skill run also timed out more often (17 vs 14 tasks).
+On serial `sound40` (Section 3.3), the skill-free bundle won 6 tasks and lost 1 (20 vs 15, p = 0.125). Dev and leaderboard agree in direction; neither proves it alone. Together they are our best-supported design result: on these budgets, the custom tool layer cost more than it saved. Both runs hit the time cap on 18 tasks.
 
 ### 5.2 Where the points go
 

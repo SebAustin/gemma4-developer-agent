@@ -67,8 +67,10 @@ Results (completed 2026-11-06 23:43 UTC; outputs in `results/kaggle/g4-eval-*-so
 
 | bundle | hash | resolved | fastapi / rich / requests | session timeouts | median s / calls | eval time |
 |---|---|---|---|---|---|---|
-| `v2_noskill` | 64e7add9e296 | **20/40** | 12/17, 7/22, 1/1 | 14 | 286 / 24 | 2.8 h |
-| `v2_fast` | (swe skill) | 15/40 | 8/17, 6/22, 1/1 | 17 | 295 / 27 | 3.0 h |
+| `v2_noskill` | 64e7add9e296 | **20/40** | 12/17, 7/22, 1/1 | 18 (4 still resolved) | 286 / 24 | 2.8 h |
+| `v2_fast` | (swe skill) | 15/40 | 8/17, 6/22, 1/1 | 18 (1 still resolved) | 295 / 27 | 3.0 h |
+
+Timeouts are counted from the harness log (`agent timed out`), corrected on 2026-11-07. `task_results.jsonl` leaves `error` empty when a timed-out task resolves through the working-tree fallback, so the first count (14 / 17) missed fastapi_5624, 14419, 13537, 11194 (noskill) and fastapi_5624 (fast).
 
 `g4 compare`: both 14, noskill only 6 (fastapi_11194, fastapi_14419, fastapi_14851, fastapi_15589, rich_3521, rich_3777), fast only 1 (rich_4079), neither 19. Exact McNemar **p = 0.125**. The direction agrees with the LB (0.13 vs 0.06), so claim 6 holds in direction, but the result is not significant.
 
@@ -84,7 +86,7 @@ Outcome breakdown (patch file contents):
 | source patch, hidden tests fail (3 / 4 timed out) | 8 | 10 |
 
 Harness 0.2.11 observations:
-- A timed-out task that has a patch is still graded (exit 1); one without a patch gets exit -1. None of the 8 timed-out patches resolved.
+- A timed-out task that has an edit is still graded: the harness diffs the working tree (`agent_runner.py` ~1048-1078); one without an edit gets exit -1. Five timed-out tasks resolved this way (4 noskill, 1 fast); the earlier note that none did came from the incomplete `error` field.
 - `v2_fast` `rich_3772` took 604.65 s, about 2× the 5-min cap, while its scoring pytest timed out (exit 124). So a single task can exceed `max_time_minutes` by the verification timeout (300 s), and the 12 h projection should add that worst case.
 
 ### Serial dev plan on `sound40` (concurrency 1; compare with `g4 compare`)
