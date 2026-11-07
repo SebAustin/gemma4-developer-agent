@@ -31,6 +31,15 @@ def oracle_plan(task) -> list[tuple[str, dict]]:
     ]
 
 
+def empty_plan(task) -> list[tuple[str, dict]]:
+    """Submit without editing anything. A task that resolves this way is not sound: its hidden
+    tests pass on the unmodified repository, so a "resolved" says nothing about the agent."""
+    return [("submit_patch", {})]
+
+
+PLANS = {"oracle": oracle_plan, "empty": empty_plan}
+
+
 class ScriptedLlm(BaseLlm):
     """Plays back ``plan`` one tool call per turn, then a final text message."""
 
