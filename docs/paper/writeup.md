@@ -145,7 +145,7 @@ On the leaderboard, `v3_guard` scored 0.10 and its successor 0.13 / 0.10: inside
 
 Each of these cost us or other teams a run, and each is now a check in our validator:
 - **Templating.** ADK treats any `{identifier}` in an instruction as a session-state key. A missing key raises `KeyError` at the first model call and fails the task. Only `{problem_description}` and `{hints?}` exist.
-- **The 32k request limit.** vLLM rejects prompt + `max_output_tokens` > 32,768, killing long tasks. Keep output at ≤ 8,192 (first reported by a public notebook).
+- **The 32k request limit.** vLLM rejects prompt + `max_output_tokens` > 32,768, killing long tasks. Keep output at ≤ 8,192 (first noted publicly).
 - **The 12-hour cliff.** Exceeding 12 hours errors the whole submission rather than zeroing unfinished tasks. Our check projects 120 × (cap + 1 min setup) and warns.
 - **Verification timeout (a null result).** Before 0.2.11, the bundle's `timeout_seconds` also bounded the scoring pytest run, and a public notebook warned it could fail correct patches. Measured over all 129 public tasks, scoring pytest took at most 9.2 s (mean 1.0 s), so this was not a real risk on these repositories. Version 0.2.11 decouples the two.
 
