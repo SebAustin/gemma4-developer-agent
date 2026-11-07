@@ -68,9 +68,11 @@ There is no agent code. The harness (`swegemma`/`adk_submission`) compiles the Y
 | `v4_guard_budget` (ours, identical resubmission) | 0.13, 0.10 |
 | `v2_noskill` (ours) | 0.13, TODO(LB 58068665, harness 0.2.11) |
 
+![Figure 1](figures/fig1_leaderboard_noise.png)
+
 With ~58 public tasks, one task is worth 0.017. A spread of 0.03–0.06 is therefore 2–4 tasks. Sampling at temperature 0.2–0.3 and early-branching trajectories make this unsurprising, but easy to forget when each data point costs a day.
 
-All our between-bundle differences fall inside this spread, except the two skill bundles against the rest (Section 5.1). We adopted a rule: a single leaderboard comparison is never evidence. Leaderboard slots serve to confirm large dev effects and to estimate noise.
+All our between-bundle differences fall inside this spread, except the two skill bundles against the rest (Section 5.1). Our rule: a single leaderboard comparison is never evidence. Leaderboard slots serve to confirm large dev effects and to estimate noise.
 
 ### 3.2 Reference-fix ceilings per environment
 
@@ -88,6 +90,8 @@ The Docker number needed two local fixes first:
 Per-task wheel sets that drop the repository's own package and respect its pins raised the oracle from 1/5 to 5/5 on a smoke split.
 
 Our first dev runs scored 5–6 of 30 tasks. That reads as 17–20%, but only 18 of those 30 tasks are solvable in the Kaggle environment, so the agent actually resolved a third of what it could. We therefore defined the **sound split** `sound40`: 40 tasks, stratified by repository and patch size, drawn only from tasks the reference fix resolves in the Kaggle environment. Every miss on `sound40` is the agent's.
+
+![Figure 2](figures/fig2_ceilings.png)
 
 ### 3.3 Paired comparison and serial runs
 
@@ -111,7 +115,7 @@ The run exposed one more way a split can be unsound. `v2_noskill` "resolved" `fa
 
 ## 4. Auditing the harness
 
-The most valuable hour of the project came from reading failed trajectories next to the harness source, not from scores.
+Our most valuable hour came from reading failed trajectories next to the harness source, not from scores.
 
 ### 4.1 Test edits made correct fixes fail
 
@@ -198,6 +202,8 @@ The pattern held on the sound split under harness 0.2.11, where environment gaps
 | no patch at all | 11 | 12 |
 | scratch or test files only | 1 | 3 |
 | source patch, hidden tests fail | 8 | 10 |
+
+![Figure 3](figures/fig3_outcomes.png)
 
 In both runs, about half the failures produced no patch; nearly all of those timed out while still exploring.
 
