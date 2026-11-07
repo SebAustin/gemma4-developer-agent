@@ -89,6 +89,21 @@ Harness 0.2.11 observations:
 - A timed-out task that has an edit is still graded: the harness diffs the working tree (`agent_runner.py` ~1048-1078); one without an edit gets exit -1. Five timed-out tasks resolved this way (4 noskill, 1 fast); the earlier note that none did came from the incomplete `error` field.
 - `v2_fast` `rich_3772` took 604.65 s, about 2× the 5-min cap, while its scoring pytest timed out (exit 124). So a single task can exceed `max_time_minutes` by the verification timeout (300 s), and the 12 h projection should add that worst case.
 
+### Base and first candidate on `sound71` (pushed 2026-11-07, ADR 0007 and 0008)
+`sound71`: every task whose reference fix passes on Kaggle and whose empty patch fails (41 rich, 29 fastapi, 1 requests; it contains 38 of `sound40`). Serial, concurrency 1, harness 0.2.11.
+
+| bundle | hash | change vs base | kernel | resolved |
+|---|---|---|---|---|
+| `v5_budgetfit` | a975adbcd250 | public Budget-Fit recipe, unchanged (attribution in `submissions/ATTRIBUTION.md`) | `g4-eval-v5-budgetfit-sound71` v1 | pending |
+| `v6_issue_recovery` | e0883c598cf0 | prompt only: issue copied into the system prompt + `git diff` recovery after history compaction; malformed `edit_file` recovery via `run_command`; "Baseline LB 0.24" edits (protect `pytest.ini`/`conftest.py`, change every sync/async variant, `git status --short && git diff` before submit), scratch scripts under `/tmp` | `g4-eval-v6-issue-recovery-sound71` v1 | pending |
+
+Lever analysis behind `v6` (2026-11-07, harness source + all 80 `sound40` traces, each lever checked by a skeptic):
+- **History compaction** (scorer config, ADK `EventsCompactionConfig`): at 14,336 prompt tokens all but the last 5 events are summarized, text only, ~25 s per summary. Fired in 31/40 noskill tasks at a median of call 19; exact-repeat tool calls rose from 8% to 17% after it. Estimated 0 to +2.
+- **Malformed `edit_file` loops**: 86 failed calls (85 with a stray backtick closing a string), resent unchanged, ~670 s per run; they cost turns but not counted calls. 0 to +1.
+- **Time**: model decoding is 96% of task time, thinking ~60% of the 5 minutes, 35 tok/s single stream. Thinking 4096 at a 5-min cap would cost 1–3 tasks; fine at 8 min.
+- **Refuted**: an earlier call cap to move the harness's budget warning (the model does not react to it). **About 0**: graph tools, batched lookups, max_output_tokens 4096, thinking 768–1024. **Unknown sign (−3 to +3)**: `include_thoughts: false`.
+- Six `sound40` tasks need names the issue never states (fastapi_15661, 15280, 14479, 14487, 15800, rich_3938); practical ceiling about 34/40.
+
 ### Serial dev plan on `sound40` (concurrency 1; compare with `g4 compare`)
 | order | bundle | single change vs v2_noskill | question |
 |---|---|---|---|
