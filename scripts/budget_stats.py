@@ -6,6 +6,8 @@ import json, statistics as st, sys
 from pathlib import Path
 
 TASKS_LB = 120
+NEAR_EMPTY_TOKENS = 50
+LONG_REPLY_TOKENS = 1000
 
 def run(cap: int, d: Path) -> None:
     rows = [json.loads(l) for l in (d / "task_results.jsonl").read_text().splitlines() if l.strip()]
@@ -28,6 +30,11 @@ def run(cap: int, d: Path) -> None:
     print(f"  used all {cap} calls: {len(capped)} ({sum(r['resolved'] for r in capped)} resolved) | >= 8 min: {len(slow)} ({sum(r['resolved'] for r in slow)} resolved)")
     print(f"  model steps/task median {st.median(ncalls):.0f} | completion tokens/step median {st.median(comp):.0f}, mean {st.mean(comp):.0f}, total {sum(comp)/1e6:.2f} M"
           f" | prompt tokens/step median {st.median(prompt):.0f}")
+    q1, _, q3 = st.quantiles(comp, n=4)
+    long_ = [c for c in comp if c >= LONG_REPLY_TOKENS]
+    print(f"  completion distribution: q1 {q1:.0f}, q3 {q3:.0f} | <= {NEAR_EMPTY_TOKENS} tokens: "
+          f"{sum(c <= NEAR_EMPTY_TOKENS for c in comp)/len(comp):.1%} of steps | >= {LONG_REPLY_TOKENS}: "
+          f"{len(long_)/len(comp):.1%} of steps, {sum(long_)/sum(comp):.0%} of completion tokens")
 
 args = sys.argv[1:]
 for cap, d in zip(args[::2], args[1::2]):

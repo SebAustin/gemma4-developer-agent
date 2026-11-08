@@ -91,6 +91,7 @@ Harness 0.2.11 observations:
 
 ### Base and first candidate on `sound71` (pushed 2026-11-07, ADR 0007 and 0008)
 `sound71`: every task whose reference fix passes on Kaggle and whose empty patch fails (41 rich, 29 fastapi, 1 requests; it contains 38 of `sound40`). Serial, concurrency 1, harness 0.2.11.
+Caveat (found 2026-11-08 by the paper fact-check): the empty-patch replay ran in local Docker (`empty_local.json`), and for 4 `sound71` tasks the reference fix also fails locally (`requests_6644`, `rich_3472`, `rich_3782`, `rich_4079`; all 4 are in `sound40` too). For them "the empty patch fails" is uninformative: an empty patch could still pass on Kaggle. Not checked on Kaggle.
 
 | bundle | hash | change vs base | kernel | resolved |
 |---|---|---|---|---|
@@ -121,9 +122,9 @@ Results (2026-11-08; outputs in `results/kaggle/g4-eval-v7-{no-thoughts,calls40}
 | `v7_no_thoughts` | 24/71 | 4 / 9 | 0.27 | 6.28 h | 10.6 h | 19 (1 resolved) | 10 at 28 (1 resolved) |
 | `v7_calls40` | 29/71 | 5 / 5 | 1.0 | 6.01 h | 10.2 h | 15 (1 resolved) | 13 at 40 (0 resolved) |
 
-- **`v7_no_thoughts` is rejected.** Stripping thinking from history did delay compaction (26/71 tasks against 47/71), but the model then thinks longer on every call: mean completion 434 tokens per call against 317. The extra decode time pushed 19 tasks past 8 min against 10, and resolves fell 29 → 24. This settles the "unknown sign" lever below: negative.
+- **`v7_no_thoughts` is rejected.** Stripping thinking from history did delay compaction (26/71 tasks against 47/71), but replies polarized rather than all getting longer: the median model call stayed at 119 tokens, near-empty calls (≤ 50 tokens) rose from 17.5% to 36.2%, and calls of 1,000+ tokens from 7.0% to 12.1% (61% of completion tokens against 46%). Mean completion 434 tokens per model call against 317. The extra decode time pushed 19 tasks past 8 min against 10, and resolves fell 29 → 24 (p = 0.27, not significant). This settles the "unknown sign" lever below: negative on time, not significant on resolves. (Corrected 2026-11-08 after the paper fact-check: this note first said the model "thinks longer on every call"; `budget_stats.py` now prints the distribution.)
 - **`v7_calls40` is rejected.** It ties `v5` and costs 1.1 h more of scorer time, so the 12 h limit would hold only about 1.8 h of headroom before setup. Of the 20 tasks that hit `v5`'s 28-call cap, it resolved 5, but only `rich_3777` (35 calls) needed more than 28 calls; the other four finished in 12–26 calls, so they came from run-to-run variation, not the budget. The 13 tasks that used all 40 calls resolved none. The call cap is not where tasks are lost: tasks that exhaust it are almost always stuck.
-- **Dev run-to-run noise:** both `v7` runs resolved the same three tasks that `v5` missed (`fastapi_14873`, `fastapi_5624`, `rich_3676`), at 18–37 calls. Near-identical configs differ by about 5 tasks each way on `sound71`, so one paired 71-task run cannot detect a lever worth +1 or +2.
+- **Dev run-to-run noise:** both `v7` runs resolved the same three tasks that `v5` missed (`fastapi_14873`, `fastapi_5624`, `rich_3676`), at 18–37 calls. `v7_calls40` changes three things (call cap 28 → 40, thinking 4096 → 1536, the prompt's budget lines), so its 5 / 5 tie with `v5` is not a pure noise estimate, and no identical-config rerun exists on `sound71`. Still, a variant that ties differs on 10 of 71 tasks, so one paired 71-task run cannot detect a lever worth +1 or +2. (Corrected 2026-11-08: this note first called the two configs "near-identical".)
 - **`v5` keeps the slot** (Q14: ties go to the incumbent).
 
 Lever analysis behind `v6` (2026-11-07, harness source + all 80 `sound40` traces, each lever checked by a skeptic):
