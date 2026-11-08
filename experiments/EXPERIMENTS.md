@@ -113,11 +113,24 @@ Next candidates on `sound71` (both pushed 2026-11-07 19:03 UTC as v1, user go-ah
 | `v7_no_thoughts` | 513241012bc3 | `include_thoughts: false` | earlier thinking makes ~25% of prompt growth (40% generated × ~60% thinking); stripping it should delay compaction and shorten prefill | `kaggle/runs/g4-eval-v7-no-thoughts-sound71` |
 | `v7_calls40` | c2a7ea4b9328 | 40 calls (prompt text matches), thinking 1536 | the 28-call cap ends 28% of tasks (2/20 resolved); `v2_noskill`'s budget won 5–1 on the shared tasks. Thinking 1536 pays for the extra calls: 40 calls at 4096 would project ~10.3 h, too close to 12 h | `kaggle/runs/g4-eval-v7-calls40-sound71` |
 
+Results (2026-11-08; outputs in `results/kaggle/g4-eval-v7-{no-thoughts,calls40}-sound71-h0211-1108`; `scripts/budget_stats.py` and `scripts/trace_stats.py`):
+
+| bundle | resolved | vs `v5` (only / only) | McNemar p | eval time | 120-task projection | tasks ≥ 8 min | at call cap |
+|---|---|---|---|---|---|---|---|
+| `v5_budgetfit` | 29/71 | — | — | 5.37 h | 9.1 h | 10 (1 resolved) | 20 at 28 (2 resolved) |
+| `v7_no_thoughts` | 24/71 | 4 / 9 | 0.27 | 6.28 h | 10.6 h | 19 (1 resolved) | 10 at 28 (1 resolved) |
+| `v7_calls40` | 29/71 | 5 / 5 | 1.0 | 6.01 h | 10.2 h | 15 (1 resolved) | 13 at 40 (0 resolved) |
+
+- **`v7_no_thoughts` is rejected.** Stripping thinking from history did delay compaction (26/71 tasks against 47/71), but the model then thinks longer on every call: mean completion 434 tokens per call against 317. The extra decode time pushed 19 tasks past 8 min against 10, and resolves fell 29 → 24. This settles the "unknown sign" lever below: negative.
+- **`v7_calls40` is rejected.** It ties `v5` and costs 1.1 h more of scorer time, so the 12 h limit would hold only about 1.8 h of headroom before setup. Of the 20 tasks that hit `v5`'s 28-call cap, it resolved 5, but only `rich_3777` (35 calls) needed more than 28 calls; the other four finished in 12–26 calls, so they came from run-to-run variation, not the budget. The 13 tasks that used all 40 calls resolved none. The call cap is not where tasks are lost: tasks that exhaust it are almost always stuck.
+- **Dev run-to-run noise:** both `v7` runs resolved the same three tasks that `v5` missed (`fastapi_14873`, `fastapi_5624`, `rich_3676`), at 18–37 calls. Near-identical configs differ by about 5 tasks each way on `sound71`, so one paired 71-task run cannot detect a lever worth +1 or +2.
+- **`v5` keeps the slot** (Q14: ties go to the incumbent).
+
 Lever analysis behind `v6` (2026-11-07, harness source + all 80 `sound40` traces, each lever checked by a skeptic):
 - **History compaction** (scorer config, ADK `EventsCompactionConfig`): at 14,336 prompt tokens all but the last 5 events are summarized, text only, ~25 s per summary. Fired in 31/40 noskill tasks at a median of call 19; exact-repeat tool calls rose from 8% to 17% after it. Estimated 0 to +2.
 - **Malformed `edit_file` loops**: 86 failed calls (85 with a stray backtick closing a string), resent unchanged, ~670 s per run; they cost turns but not counted calls. 0 to +1.
 - **Time**: model decoding is 96% of task time, thinking ~60% of the 5 minutes, 35 tok/s single stream. Thinking 4096 at a 5-min cap would cost 1–3 tasks; fine at 8 min.
-- **Refuted**: an earlier call cap to move the harness's budget warning (the model does not react to it). **About 0**: graph tools, batched lookups, max_output_tokens 4096, thinking 768–1024. **Unknown sign (−3 to +3)**: `include_thoughts: false`.
+- **Refuted**: an earlier call cap to move the harness's budget warning (the model does not react to it). **About 0**: graph tools, batched lookups, max_output_tokens 4096, thinking 768–1024. **Unknown sign (−3 to +3)**: `include_thoughts: false` (measured 2026-11-08 as `v7_no_thoughts`: −5, see above).
 - Six `sound40` tasks need names the issue never states (fastapi_15661, 15280, 14479, 14487, 15800, rich_3938); practical ceiling about 34/40.
 
 ### Serial dev plan on `sound40` (concurrency 1; compare with `g4 compare`)
