@@ -137,6 +137,7 @@ Notes:
 - `g4 validate` warns that `v3_budget` takes 18 h in the worst case. Budget-Fit reports that the 28-call cap ends most tasks well before 8 min. The serial dev run measures mean task time; project 120 × that before any submission.
 
 Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bundle>`, push it, then `kaggle competitions submit gemma-4-developer-agent -k sebmontreal/g4-submission -f submission.zip -v <N>`. Wait for version N's own run to finish (the status call may still show the previous version's COMPLETE), and check that its log prints the expected bundle hash.
+- The team may have only one pending submission. A submit sent while another is still scoring fails with a bare `400 Bad Request` from the CLI; the server's message reads "Your team already has 1 pending submissions" (seen 2026-11-08, while `v3_guard` was scoring). A rejected submit does not use the day's slot. A run scores for up to 12 h, so a submission sent after about 12:00 UTC can still be pending when the next slot opens at 00:00 UTC and delay it. Submit before 12:00 UTC to keep the next day's slot free.
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
