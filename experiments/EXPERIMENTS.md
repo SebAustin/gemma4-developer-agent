@@ -141,7 +141,8 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
-| 2026-11-07 | 58091025 | adce53d47bc8 | pending | v3_guard identical resubmission (0.10 on 0.2.7), **harness swegemma 0.2.11** |
+| 2026-11-08 | 58109075 | a975adbcd250 | pending | v5_budgetfit: public Budget-Fit recipe unchanged (census draws 0.13–0.18, mean 0.166); our first own draw, **harness swegemma 0.2.11**; kernel g4-submission v8, zip sha256 aa9d6f89f529; the 00:00 UTC submit was refused while 58091025 was still pending |
+| 2026-11-07 | 58091025 | adce53d47bc8 | **0.12** | v3_guard identical resubmission (0.10 on 0.2.7), **harness swegemma 0.2.11**; ties v2_noskill's 0.12 on 0.2.11, which ends the old-bundle rotation |
 | 2026-11-06 | 58068665 | 64e7add9e296 | **0.12** | v2_noskill identical resubmission (0.13 on 0.2.7), **harness swegemma 0.2.11**; within the noise floor (rows below were scored on 0.2.7 unless noted) |
 | 2026-10-08 | 56958315 | 689a8fb46e18 | **0.10** | v4_guard_budget, identical resubmission: 0.13 then 0.10, so our own leaderboard noise is ±0.03 (2 tasks of ~58) |
 | 2026-10-07 | 56893672 | 689a8fb46e18 | **0.13** | v4_guard_budget: v3_guard + 240 s, 8 min / 28 calls / 80 turns; finished inside 12 h; ties v2_noskill (within the ±0.06 noise) |
