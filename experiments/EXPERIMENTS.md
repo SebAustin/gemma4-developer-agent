@@ -105,7 +105,7 @@ Results (2026-11-07; outputs in `results/kaggle/g4-eval-v{5-budgetfit,6-issue-re
 - **`v5` vs `v2_noskill` on the 38 shared tasks** (runs a day apart, different budgets: noskill 5 min / 40 calls / thinking 1536 / T 0.3): `v2_noskill` 18, `v5` 14; noskill only 5 (fastapi_14419, fastapi_14873, fastapi_5624, rich_3521, rich_3777), `v5` only 1 (rich_3278); p = 0.22. Three of the five hit `v5`'s 28-call cap; noskill solved them in 23–27 calls. `v5` vs `v2_fast`: 14 vs 14. This runs against the leaderboard (Budget-Fit census mean 0.166 over 10 draws, ours 0.12–0.13), so dev and LB disagree on this pair; our own `v5` draws decide it.
 - **Scorer time:** 120 tasks × mean task time = 9.1 h (`v5`), 9.6 h (`v6`), 8.4 h (`v2_noskill`), before setup and slow-scorer days.
 - **Earlier thinking is replayed every turn:** with `include_thoughts: true` the next prompt grows by a median 1.12× the previous completion (`v5`, completions > 300 tokens); generated tokens make about 40% of prompt growth before the first compaction. On 0.2.11 `include_thoughts: false` keeps reasoning but strips it from history, so it should slow prompt growth and delay compaction. Its sign on resolves is still unknown.
-- Compaction counter used here (prompt tokens fall > 30% after reaching 14,336) finds 30/40 on `v2_noskill`, where the earlier count found 31/40. Script: `scripts/trace_stats.py <results dir>`.
+- Compaction counter used here (prompt tokens fall > 30% after reaching 14,336) finds 30/40 on `v2_noskill`, where the earlier count found 31/40. Script: `scripts/trace_stats.py <results dir>`. Resolved 2026-11-08: 33/40 tasks reach 14,336 tokens, but 3 (`rich_3180`, `rich_3506`, `rich_3894`) reach it only on their last model call, so no compaction ever affects them; no task shows a smaller drop. 30/40 (median first at call 19.5) is the count of observed compactions and the one the paper uses (Sections 4.2 and 5.3 now share this counter). The earlier 31 matches neither rule and is retired.
 
 Next candidates on `sound71` (both pushed 2026-11-07 19:03 UTC as v1, user go-ahead; about 5.5 GPU-h each; embedded bundles decoded and diffed against `submissions/` before the push):
 
@@ -128,7 +128,7 @@ Results (2026-11-08; outputs in `results/kaggle/g4-eval-v7-{no-thoughts,calls40}
 - **`v5` keeps the slot** (Q14: ties go to the incumbent).
 
 Lever analysis behind `v6` (2026-11-07, harness source + all 80 `sound40` traces, each lever checked by a skeptic):
-- **History compaction** (scorer config, ADK `EventsCompactionConfig`): at 14,336 prompt tokens all but the last 5 events are summarized, text only, ~25 s per summary. Fired in 31/40 noskill tasks at a median of call 19; exact-repeat tool calls rose from 8% to 17% after it. Estimated 0 to +2.
+- **History compaction** (scorer config, ADK `EventsCompactionConfig`): at 14,336 prompt tokens all but the last 5 events are summarized, text only, ~25 s per summary. Fired in 30/40 noskill tasks at a median of call 19.5 (corrected 2026-11-08 from 31/40 at call 19, see the counter note above); exact-repeat tool calls rose from 8% to 17% after it. Estimated 0 to +2.
 - **Malformed `edit_file` loops**: 86 failed calls (85 with a stray backtick closing a string), resent unchanged, ~670 s per run; they cost turns but not counted calls. 0 to +1.
 - **Time**: model decoding is 96% of task time, thinking ~60% of the 5 minutes, 35 tok/s single stream. Thinking 4096 at a 5-min cap would cost 1–3 tasks; fine at 8 min.
 - **Refuted**: an earlier call cap to move the harness's budget warning (the model does not react to it). **About 0**: graph tools, batched lookups, max_output_tokens 4096, thinking 768–1024. **Unknown sign (−3 to +3)**: `include_thoughts: false` (measured 2026-11-08 as `v7_no_thoughts`: −5, see above).
@@ -155,7 +155,7 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
-| 2026-11-08 | 58109075 | a975adbcd250 | pending | v5_budgetfit: public Budget-Fit recipe unchanged (census draws 0.13–0.18, mean 0.166); our first own draw, **harness swegemma 0.2.11**; kernel g4-submission v8, zip sha256 aa9d6f89f529; the 00:00 UTC submit was refused while 58091025 was still pending |
+| 2026-11-08 | 58109075 | a975adbcd250 | **0.17** | v5_budgetfit: public Budget-Fit recipe unchanged (census draws 0.13–0.18, mean 0.166); our first own draw, 0.17 ≈ 10 of ~58 tasks, inside the census range and about 3 tasks above our own bundles' mean (7.25); the team's best, but not our design; finished inside 12 h on 0.2.11; **harness swegemma 0.2.11**; kernel g4-submission v8, zip sha256 aa9d6f89f529; the 00:00 UTC submit was refused while 58091025 was still pending |
 | 2026-11-07 | 58091025 | adce53d47bc8 | **0.12** | v3_guard identical resubmission (0.10 on 0.2.7), **harness swegemma 0.2.11**; ties v2_noskill's 0.12 on 0.2.11, which ends the old-bundle rotation |
 | 2026-11-06 | 58068665 | 64e7add9e296 | **0.12** | v2_noskill identical resubmission (0.13 on 0.2.7), **harness swegemma 0.2.11**; within the noise floor (rows below were scored on 0.2.7 unless noted) |
 | 2026-10-08 | 56958315 | 689a8fb46e18 | **0.10** | v4_guard_budget, identical resubmission: 0.13 then 0.10, so our own leaderboard noise is ±0.03 (2 tasks of ~58) |

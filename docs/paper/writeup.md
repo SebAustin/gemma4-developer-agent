@@ -5,7 +5,7 @@
 
 ## Abstract
 
-The Gemma 4 Developer Agent competition scores a declarative agent bundle (prompts, skills, sampling and budgets for Gemma 4 31B) by how many hidden Python issues it resolves. It does so in a single 12-hour run over private repositories, with one submission a day. We report what one small team learned trying to improve such an agent. Most of it concerns measurement, not the agent.
+The Gemma 4 Developer Agent competition scores a declarative agent bundle (prompts, skills, sampling and budgets for Gemma 4 31B) by how many hidden Python issues it resolves. It does so in a single 12-hour run over private repositories, with one submission a day. We report what one small team learned trying to improve such an agent: mostly about measurement, not the agent.
 
 1. Resubmitting an identical bundle moved its public score by 0.03 (0.13 → 0.10), another team's by up to 0.06: 2–4 of the ~58 leaderboard tasks, as large as most effects we measured. The leaderboard keeps each team's best draw, and scores rise with submission count.
 2. The fraction of public tasks that the *reference fix itself* passes depends on the environment: 105/129 in Docker with per-task dependencies, 73/129 in Kaggle notebooks. Raw dev scores are uninterpretable without this ceiling.
@@ -22,7 +22,7 @@ Agent competitions with hidden test sets invite a familiar loop: change the prom
 - **The public leaderboard sees about half of them.** Each submission is a 12-hour GPU run; teams get one a day.
 - **The harness is a moving target.** The organizers republished its wheels twice, sometimes under the same version number.
 
-We set out to improve the agent through prompts, custom tools and budget tuning, but our scores never left the 0.06–0.13 band. Measuring why produced findings that transfer to any hidden benchmark.
+We set out to improve the agent through prompts, custom tools and budget tuning, but our own bundles never left the 0.06–0.13 band. Measuring why produced findings that transfer to any hidden benchmark.
 
 **Contributions.**
 1. A noise model of the public leaderboard, from identical resubmissions and all teams' submission counts.
@@ -79,7 +79,7 @@ All our between-bundle differences fall inside this spread, except `v2_fast` (0.
 | 10–19 | 918 | 0.167 | 3.4% |
 | 20–49 | 419 | 0.183 | 8.8% |
 
-Teams at ≥ 0.22 made a median of 19 submissions; teams at our 0.12–0.13, a median of 3. Effort confounds this, but the strongest public notebooks share one recipe. A participant's census found ten draws of its Budget-Fit files averaging 0.166 (0.13–0.18), about 10 of 58 tasks; another file set scored 7–13 over five draws. The 0.22–0.24 cluster is mostly best draws: Budget-Fit's mean beats ours (7.25) by about 3 tasks, not 7.
+Teams at ≥ 0.22 made a median of 19 submissions; teams at 0.12–0.13, a median of 3. Effort confounds this, but the strongest public notebooks share one recipe. A participant's census found ten draws of its Budget-Fit files averaging 0.166 (0.13–0.18), about 10 of 58 tasks; another file set scored 7–13 over five draws. The 0.22–0.24 cluster is mostly best draws: Budget-Fit's mean beats ours (7.25) by about 3 tasks, not 7. Our draw of its files scored 0.17.
 
 ### 3.2 Reference-fix ceilings per environment
 
@@ -149,12 +149,12 @@ On the leaderboard, `v3_guard` scored 0.10 and its successor 0.13 / 0.10: inside
 
 ### 4.2 Other pitfalls a validator can catch
 
-Each of these cost us or other teams a run; the first three are now checks in our validator:
+Each cost us or other teams a run; the first three are validator checks:
 - **Templating.** ADK treats any `{identifier}` in an instruction as a session-state key. A missing key raises `KeyError` at the first model call and fails the task. Only `{problem_description}` and `{hints?}` exist.
 - **The 32k request limit.** vLLM rejects prompt + `max_output_tokens` > 32,768, killing long tasks. Keep output at ≤ 8,192 (first noted publicly).
 - **The 12-hour cliff.** Exceeding 12 hours errors the whole submission rather than zeroing unfinished tasks. Our check projects 120 × (cap + 1 min setup) and warns.
-- **Verification timeout (a null result).** Before 0.2.11, `timeout_seconds` also bounded the scoring pytest run, which a public notebook warned could fail correct patches. Locally, reference-fix scoring pytest took ≤ 9.2 s (mean 1.0 s) on all 129 tasks.
-- **History compaction.** At 14,336 prompt tokens, the scorer summarizes all but the agent's last five events, keeping only text: tool outputs and the verbatim issue are lost, at about 25 s each. It fired in 31/40 `sound40` tasks of `v2_noskill` (median call 19). The system instruction, re-sent every turn, survives.
+- **Verification timeout (a null result).** Before 0.2.11, `timeout_seconds` also bounded the scoring pytest run, which a public notebook warned could fail correct patches. Locally, reference-fix scoring pytest took ≤ 9.2 s on all 129 tasks.
+- **History compaction.** At 14,336 prompt tokens, the scorer summarizes all but the agent's last five events, keeping only text: tool outputs and the verbatim issue are lost, at about 25 s each. It fired in 30/40 `sound40` tasks of `v2_noskill` (median call 19.5). The system instruction, re-sent every turn, survives.
 
 ## 5. Agent design under noise
 
@@ -171,11 +171,11 @@ Skills are the only way to ship custom tools in a declarative bundle. Our `swe` 
 
 \* concurrency 4 (Section 3.3).
 
-The skill bundles are our two lowest scores. Removing the skill while keeping the prompt gave our best. Only `v2_fast` clears the 0.06 spread, by one task, and each skill bundle was scored once.
+The skill bundles are our two lowest scores. Removing the skill while keeping the prompt gave our own best. Only `v2_fast` clears the 0.06 spread, by one task, and each skill bundle was scored once.
 
 Plausible cause, unproven: the skill's instructions lengthen every request; the model rarely called it (35 calls in 40 `sound40` tasks, 2 in the 6 tasks it lost).
 
-On serial `sound40`, the skill-free bundle won 6 tasks and lost 1 (p = 0.125, Section 3.3). Dev and leaderboard agree in direction; together they suggest, not prove, that on these budgets the custom tool layer cost more than it saved. Both runs hit the time cap on 18 tasks.
+On serial `sound40`, the skill-free bundle won 6 tasks and lost 1 (p = 0.125, Section 3.3). Dev and leaderboard agree in direction; together they suggest, not prove, that on these budgets the custom tool layer cost more than it saved.
 
 ### 5.2 Where the points go
 
@@ -200,9 +200,9 @@ This supports spending budget on *getting to an edit* rather than verification. 
 
 ### 5.3 Stripping earlier thinking
 
-`v5_budgetfit` sets `include_thoughts: true`. On harness 0.2.11, `false` drops earlier thinking from the history; the model still thinks. We ran both bundles once, serially, on the 71 sound public tasks (Section 3.3).
+`v5_budgetfit` sets `include_thoughts: true`. On 0.2.11, `false` drops earlier thinking from the history; the model still thinks. We ran both bundles once, serially, on the 71 sound public tasks (Section 3.3).
 
-With `false`, compaction (Section 4.2) fired in 26/71 tasks instead of 47/71. Mean tokens per model call rose from 317 to 434, though the median stayed at 119: calls of 1,000+ tokens went from 7% to 12%. Tasks running ≥ 8 min went from 10 to 19, and 120 × mean task time, before setup, from 9.1 h to 10.6 h. Resolved tasks fell from 29/71 to 24/71 (9 vs 4 discordant, p = 0.27), not significant: a 40-call variant tied `v5_budgetfit` yet differed on 10 tasks. Plausible cause, unproven: without its earlier reasoning, the model sometimes reasons again at length. We kept the thinking.
+With `false`, compaction (Section 4.2) fired in 26/71 tasks instead of 47/71. Mean tokens per model call rose from 317 to 434, though the median stayed at 119: calls of 1,000+ tokens went from 7% to 12%. Tasks running ≥ 8 min went from 10 to 19, and 120 × mean task time, before setup, from 9.1 h to 10.6 h. Resolved tasks fell from 29/71 to 24/71 (9 vs 4 discordant, p = 0.27), not significant: a 40-call variant tied `v5_budgetfit` yet differed on 10 tasks. Plausible cause, unproven: without its earlier reasoning, the model sometimes reasons again at length.
 
 ## 6. Released resources
 
@@ -224,7 +224,7 @@ The repository (Apache-2.0) contains:
 ## 8. Limitations
 
 - **Tiny samples.** Our leaderboard evidence is single or double submissions on ~58 tasks, and our dev evidence is 30–71 tasks with one seed.
-- **`sound40` was filtered on the reference fix only.** Two of its tasks pass with an empty patch (Section 3.3). We found them after the runs and report results with and without them.
+- **`sound40` was filtered on the reference fix only.** Two of its tasks pass with an empty patch (Section 3.3). We found them after the runs and report results with and without them. For four sound tasks the empty-patch check is uninformative: it ran locally, where their reference fix fails.
 - **Public repositories differ from the hidden ones:** four well-known open-source projects versus private ones.
 - **The harness changed under us** (0.2.7 → 0.2.11), so leaderboard scores before and after 2026-10-12 aren't strictly comparable.
 
