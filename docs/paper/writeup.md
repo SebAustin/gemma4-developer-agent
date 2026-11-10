@@ -79,7 +79,7 @@ All our between-bundle differences fall inside this spread, except `v2_fast` (0.
 | 10–19 | 918 | 0.167 | 3.4% |
 | 20–49 | 419 | 0.183 | 8.8% |
 
-Teams at ≥ 0.22 made a median of 19 submissions; teams at 0.12–0.13, a median of 3. Effort confounds this, but the strongest public notebooks share one recipe. A participant's census found ten draws of its Budget-Fit files averaging 0.166 (0.13–0.18), about 10 of 58 tasks; another file set scored 7–13 over five draws. The 0.22–0.24 cluster is mostly best draws: Budget-Fit's mean beats ours (7.25) by about 3 tasks, not 7. Our draw of its files scored 0.17.
+Teams at ≥ 0.22 made a median of 19 submissions; teams at 0.12–0.13, a median of 3. Effort confounds this, but top public notebooks share one recipe. A participant's census found ten draws of its Budget-Fit files averaging 0.166 (0.13–0.18), about 10 of 58 tasks; another file set scored 7–13 over five draws. The 0.22–0.24 cluster is mostly best draws: Budget-Fit's mean beats ours (7.25) by about 3 tasks, not 7. Both our draws of its files scored 0.17.
 
 ### 3.2 Reference-fix ceilings per environment
 
@@ -94,7 +94,7 @@ The Docker number needed extra test-dependency wheels and two fixes. **Package s
 
 Per-task wheel sets that drop the repository's own package and respect its pins raised the oracle from 1/5 to 5/5 on a smoke split.
 
-Our first dev runs scored 5–6 of 30 tasks (17–20%), but only 18 of those 30 are solvable in the Kaggle environment: the agent resolved a third of what it could. We therefore defined the **sound split** `sound40`: 40 tasks, stratified by repository and patch size, drawn only from tasks the reference fix resolves in the Kaggle environment. No `sound40` miss is environmental.
+Our first dev runs scored 5–6 of 30 tasks (17–20%), but only 18 of them are solvable in the Kaggle environment: the agent resolved a third of what it could. We therefore defined the **sound split** `sound40`: 40 tasks, stratified by repository and patch size, drawn only from tasks the reference fix resolves in the Kaggle environment. No `sound40` miss is environmental.
 
 ![Figure 2](figures/fig2_ceilings.png)
 
@@ -206,7 +206,7 @@ With `false`, compaction (Section 4.2) fired in 26/71 tasks instead of 47/71. Me
 
 ## 6. Released resources
 
-The repository (Apache-2.0) contains:
+The repository github.com/SebAustin/gemma4-developer-agent (Apache-2.0) contains:
 - `g4 validate`: compiles a bundle with the real harness and adds the first three checks of Section 4.2.
 - `g4 compare`: paired per-task comparison with an exact McNemar p-value.
 - `g4 splits`: frozen, stratified dev splits, including `sound40`.
