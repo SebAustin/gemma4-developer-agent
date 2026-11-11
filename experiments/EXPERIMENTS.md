@@ -155,6 +155,7 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
+| 2026-11-11 | 58222745 | a975adbcd250 | pending | v5_budgetfit draw 3, identical resubmission of kernel v8, **harness swegemma 0.2.11**; submitted 02:57 UTC (user go-ahead 2026-11-10 for daily draws until Dec 1; later draws are submitted at 00:01 UTC by the daily slot job) |
 | 2026-11-09 | 58144231 | a975adbcd250 | **0.17** | v5_budgetfit identical resubmission of kernel g4-submission v8 (zip sha256 aa9d6f89f529): second draw of the public Budget-Fit recipe, **harness swegemma 0.2.11**; same score as 58109075, both draws inside the census range 0.13–0.18; submitted 00:01:55 UTC by the scheduled slot job, scored between 13:05 and 13:11 UTC, about 13 h 5 min after submission, so submit-to-score can exceed 12 h |
 | 2026-11-08 | 58109075 | a975adbcd250 | **0.17** | v5_budgetfit: public Budget-Fit recipe unchanged (census draws 0.13–0.18, mean 0.166); our first own draw, 0.17 ≈ 10 of ~58 tasks, inside the census range and about 3 tasks above our own bundles' mean (7.25); the team's best, but not our design; finished inside 12 h on 0.2.11; **harness swegemma 0.2.11**; kernel g4-submission v8, zip sha256 aa9d6f89f529; the 00:00 UTC submit was refused while 58091025 was still pending |
 | 2026-11-07 | 58091025 | adce53d47bc8 | **0.12** | v3_guard identical resubmission (0.10 on 0.2.7), **harness swegemma 0.2.11**; ties v2_noskill's 0.12 on 0.2.11, which ends the old-bundle rotation |

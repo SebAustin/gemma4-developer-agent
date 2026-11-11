@@ -18,3 +18,6 @@ We therefore:
 - Keep improving our own line: rejected. Nothing in v2–v4 left the 0.06–0.13 band, and the recipe's budgets alone (`v4_guard_budget`) did not close the gap, so the difference sits in sampling and prompt.
 - Base on the bundle with the highest claimed score (0.24): rejected, because that claim is a best draw and its file family averages below Budget-Fit.
 - Confirm the base with one reproduction submission: rejected as a test (a single draw is as wide as the gap); the base still gets submitted, as the first of many logged draws.
+
+## Note (2026-11-10)
+The user set the goal for the last 22 days: the final private-leaderboard ranking, not the public number. Every daily slot until 2026-12-01 goes to a draw of the bundle with the best evidence (`v5_budgetfit` for now; the slot follows dev per ADR 0008). Two draws so far scored 0.17 and 0.17. Before spending GPU quota, the public notebooks published after the census are read (not run) and compared with `v5`; only the most promising one gets a paired `sound71` run, with the user's go-ahead.
