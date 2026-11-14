@@ -42,6 +42,14 @@ _Avoid_: grader, metric, evaluator
 The spread of public leaderboard scores between submissions of the same bundle. Measured at ±0.03 (our two runs of one bundle) to ±0.06 (a public bundle run three times), that is 2–4 of the ~58 public tasks. Score gaps smaller than this say nothing about which variant is better.
 _Avoid_: variance, randomness, luck
 
+**Draw**:
+One scored submission of a bundle. Identical submissions of one bundle are repeated draws of the same random outcome.
+_Avoid_: run (a run is a dev evaluation), attempt
+
+**Failed draw**:
+A draw that resolves at most about 2 public tasks when other draws of the same bundle resolve 7 or more. It is read as a scoring or infrastructure failure, not the bundle's skill: it is left out of the bundle's mean but counted in its failure rate, which matters for the final pick because one failed final submission sinks the private score.
+_Avoid_: bad draw, outlier
+
 **Public leaderboard score**:
 A team's best score over all its submissions on the public tasks. Because each submission is a fresh draw from the leaderboard noise, it rises with the number of submissions even when the bundle does not change. Compare bundles by the mean of their draws, never by a team's public leaderboard score.
 _Avoid_: LB score (when one submission's score is meant), rank

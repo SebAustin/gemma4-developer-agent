@@ -21,3 +21,12 @@ We therefore:
 
 ## Note (2026-11-10)
 The user set the goal for the last 22 days: the final private-leaderboard ranking, not the public number. Every daily slot until 2026-12-01 goes to a draw of the bundle with the best evidence (`v5_budgetfit` for now; the slot follows dev per ADR 0008). Two draws so far scored 0.17 and 0.17. Before spending GPU quota, the public notebooks published after the census are read (not run) and compared with `v5`; only the most promising one gets a paired `sound71` run, with the user's go-ahead.
+
+## Note (2026-11-14): leader comparison
+The leader (Yurnero, 0.29) has published no method; the 0.24 tie is single best draws of Budget-Fit relatives (Idris v24: one 0.24 draw, siblings 0.15–0.17; his local run of a bundle identical to `v5` tied his own prompt, 18 vs 19 of 46). Decided with the user:
+- Bundle-level changes only (prompt, sampling, budgets, skills). No LoRA: public adapters scored 0.06–0.15, cost about 29% more time per task (≈ 11.7 h projected) and silenced the thinking channel.
+- The target is the expected private score (mean of draws), with the public 0.29 as a reference only.
+- Failed draws (CONTEXT.md) leave the mean but count in a failure rate.
+- GPU cap for this competition: one more paired `sound71` run in the week of 2026-11-14 and three the week after.
+- Next candidate: `v9_complete` (`v5` + Idris v30's completeness step), temperature set by the `v8_temp1` result, pushed only after that result and the user's go-ahead.
+- Final selection: two different bundles with similar means, so one failure mode cannot sink both private submissions.

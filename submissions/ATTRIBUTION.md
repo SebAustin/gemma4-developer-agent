@@ -8,3 +8,5 @@ Attribution lives here rather than inside the bundle so the submitted archive st
 
 Bundles derived from it (`v6_*` and later) list their changes against `v5_budgetfit` in their own commit messages
 and in `experiments/EXPERIMENTS.md`.
+
+`v9_complete` adds to `v5_budgetfit` the completeness step of Muhammed Idris's v30 prompt (dataset `muhammedidris28/gemma4-agent-runs`, `agents/v30/prompts/system.md`, Apache-2.0): name every file to change, one targeted grep for callers, sync/async twins and re-exports, and a `git diff --stat` check against that list before submitting. The three bullets are copied nearly verbatim.
