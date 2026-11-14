@@ -129,6 +129,18 @@ Results (2026-11-08; outputs in `results/kaggle/g4-eval-v7-{no-thoughts,calls40}
 
 Queued for the 2026-11-14 quota reset (user go-ahead 2026-11-10 and 2026-11-11): `v8_temp1` (`v5` + temperature 1.0, top_k 64; kernel `g4-eval-v8-temp1-sound71`) and an **identical `v5` rerun** (`g4-eval-v5-budgetfit-sound71-rerun`, embedded bundle verified file-for-file against the original kernel). The rerun gives the first same-config dev noise estimate on `sound71`; `v8` is judged against both `v5` runs.
 
+Results (2026-11-14; outputs in `results/kaggle/g4-eval-{v8-temp1,v5-budgetfit}-sound71*-h0211-1114`):
+
+| run | resolved | vs `v5` (only / only) | vs `v5` rerun | eval time | 120-task projection | ≥ 8 min | malformed `edit_file` replies |
+|---|---|---|---|---|---|---|---|
+| `v5_budgetfit` (2026-11-07) | 29/71 | — | 2 / 3 | 5.37 h | 9.1 h | 10 | 76 in 9 tasks |
+| `v5_budgetfit` rerun, identical | 30/71 | 3 / 2 (p = 1.0) | — | 5.35 h | 9.0 h | 10 | 74 in 3 tasks |
+| `v8_temp1` (T 1.0, top_k 64) | 30/71 | 4 / 3 (p = 1.0) | 2 / 2 (p = 1.0) | 5.54 h | 9.4 h | 11 | 14 in 8 tasks |
+
+- **Same-config dev noise on `sound71`: 5 of 71 tasks discordant** (rerun vs original, 30 vs 29). This is the first identical-config estimate; it sets the floor for reading any single paired run. A lever must beat about ±3 tasks to be visible.
+- **`v8_temp1` ties `v5`** against both runs (30 vs 29 and 30 vs 30) and costs about 0.3 h more scorer time. It is not adopted: ties go to the incumbent (ADR 0008).
+- **Temperature 1.0 does remove the malformed-`edit_file` loops**: 14 broken replies against 74–76. At T 0.2 the model resends the same broken call; at T 1.0 it varies it. The loops cost turns, not counted calls, so resolves do not move.
+
 Lever analysis behind `v6` (2026-11-07, harness source + all 80 `sound40` traces, each lever checked by a skeptic):
 - **History compaction** (scorer config, ADK `EventsCompactionConfig`): at 14,336 prompt tokens all but the last 5 events are summarized, text only, ~25 s per summary. Fired in 30/40 noskill tasks at a median of call 19.5 (corrected 2026-11-08 from 31/40 at call 19, see the counter note above); exact-repeat tool calls rose from 8% to 17% after it. Estimated 0 to +2.
 - **Malformed `edit_file` loops**: 86 failed calls (85 with a stray backtick closing a string), resent unchanged, ~670 s per run; they cost turns but not counted calls. 0 to +1.
