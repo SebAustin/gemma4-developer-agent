@@ -141,6 +141,8 @@ Results (2026-11-14; outputs in `results/kaggle/g4-eval-{v8-temp1,v5-budgetfit}-
 - **`v8_temp1` ties `v5`** against both runs (30 vs 29 and 30 vs 30) and costs about 0.3 h more scorer time. It is not adopted: ties go to the incumbent (ADR 0008).
 - **Temperature 1.0 does remove the malformed-`edit_file` loops**: 14 broken replies against 74–76. At T 0.2 the model resends the same broken call; at T 1.0 it varies it. The loops cost turns, not counted calls, so resolves do not move.
 
+`v9_complete` (`v5` + Idris v30 completeness step, T 0.2; kernel `g4-eval-v9-complete-sound71`, 2026-11-14): **30/71**, vs `v5` 2 / 1 (p = 1.0), vs the `v5` rerun 4 / 4 (p = 1.0). Eval 5.70 h, 120-task projection 9.6 h, 12 tasks ≥ 8 min. Multi-file patches 18 vs 22 in the rerun, so the step did not produce more multi-file fixes. **Tie: not adopted** (ADR 0008). With `v6`, `v7_*`, `v8` and `v9` all within the 5/71 same-config noise, no prompt, sampling or budget lever tested on top of Budget-Fit has shown a measurable effect.
+
 Lever analysis behind `v6` (2026-11-07, harness source + all 80 `sound40` traces, each lever checked by a skeptic):
 - **History compaction** (scorer config, ADK `EventsCompactionConfig`): at 14,336 prompt tokens all but the last 5 events are summarized, text only, ~25 s per summary. Fired in 30/40 noskill tasks at a median of call 19.5 (corrected 2026-11-08 from 31/40 at call 19, see the counter note above); exact-repeat tool calls rose from 8% to 17% after it. Estimated 0 to +2.
 - **Malformed `edit_file` loops**: 86 failed calls (85 with a stray backtick closing a string), resent unchanged, ~670 s per run; they cost turns but not counted calls. 0 to +1.
