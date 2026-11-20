@@ -171,7 +171,11 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
-| 2026-11-16 | 58419360 | 15e1bb7b9357 | pending | v8_temp1 daily draw 7 (kernel v9), harness 0.2.11; first leaderboard draw of `v8_temp1`. Still pending 18 h later, so draw 8 (`v5`) waits for it to score |
+| 2026-11-20 | 58606888 | 15e1bb7b9357 | pending | v8_temp1 daily draw 11 (kernel v9) |
+| 2026-11-19 | 58557670 | a975adbcd250 | **0.18** | v5_budgetfit daily draw 10 (kernel v8). `v5` sound draws 0.17, 0.17, 0.12, 0.22, 0.18, 0.17, 0.18: mean 0.173 over 7 (failure rate 1/8) |
+| 2026-11-18 | 58502040 | 15e1bb7b9357 | **0.15** | v8_temp1 daily draw 9 (kernel v9). `v8_temp1` draws 0.17, 0.15: mean 0.16 |
+| 2026-11-17 | 58455757 | a975adbcd250 | **0.17** | v5_budgetfit daily draw 8 (kernel v8) |
+| 2026-11-16 | 58419360 | 15e1bb7b9357 | **0.17** | v8_temp1 daily draw 7 (kernel v9), harness 0.2.11; first leaderboard draw of `v8_temp1` |
 | 2026-11-15 | 58379290 | a975adbcd250 | **0.18** | v5_budgetfit daily draw 6 (kernel v8), harness 0.2.11. `v5` draws 0.17, 0.17, 0.01 (failed), 0.12, 0.22, 0.18: mean 0.172 without the failed draw (0.145 with it), failure rate 1/6. From draw 7 the daily slot alternates: odd draws kernel g4-submission **v9 = `v8_temp1`** (bundle 15e1bb7b9357, zip sha256 e84287b134a2, verified from the kernel log), even draws kernel v8 = `v5_budgetfit` (user go-ahead 2026-11-15; Q8, second final candidate) |
 | 2026-11-14 | 58346883 | a975adbcd250 | **0.22** | v5_budgetfit daily draw 5, harness 0.2.11; scored about 18 h after submission. `v5` draws so far 0.17, 0.17, 0.01 (failed draw), 0.12, 0.22: mean 0.17 without the failed draw (0.14 with it), failure rate 1/5 |
 | 2026-11-12 | 58253492 | a975adbcd250 | **0.12** | v5_budgetfit daily draw 4, harness 0.2.11 |
