@@ -190,3 +190,15 @@ Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bu
 | 2026-10-05 | 56836396 | 64e7add9e296 | **0.13** | v2_noskill: v2_fast prompt, shell commands instead of the swe skill; our best |
 | 2026-10-03 | 56810022 | 0028c7312dfe | **0.06** | v2_fast: edit by 6th call, 5 min / 40 calls; dev30 6/30 vs v1 5/30 |
 | 2026-10-02 | 56783164 | 9c208aa2c19a | **0.08** | v1_scaffold: swe skill + red/green workflow, 5 min / 40 calls; below sample (~0.12), see docs/diagnosis/v1-regression.md |
+
+## 2026-11-20: agency mission "beat the leader" (no GPU spent)
+
+- **The leader moved.** Host topic 760126 (11-18): a metric bug let some agents score improperly high; affected submissions were rescored by 11-20. Yurnero went 0.29 → 0.17. The top is now a 16-way tie at **0.24**, then 121 teams at 0.22 (us), 587 at 0.20. Ties break by submission date, earlier wins.
+- **Headroom on `sound71`** (v5, v5 rerun, v8, v9; scripts in the session scratchpad `headroom/`):
+  - Solved by all 4 runs: 25. Flaky (1–3 runs): 11. Never solved: 35 (33 across all 7 runs). Best of 4 runs: 36; best of 2: 32.8; one run: 29.75.
+  - Flaky failures are budget exhaustion: 14/25 hit the call cap, 9/25 the time cap, 6/25 empty diff. Flaky wins: 0 timeouts.
+  - Never-solved: 32 attempts edit the right files with a wrong fix, 33 edit only wrong files.
+  - A second attempt on every task needs about 18 h against the 12 h scorer limit, and best-of-2 (+3 tasks) is inside the ±3-task same-config noise. A rescue sub-agent would share the task-level budget; others report multi-agent bundles at ≤ 0.10 on the LB (topic 760126, 11-19).
+- **Public levers since 11-13:** 40 calls, pinned issue, T 0.4, larger output cap, verification paragraphs, LoRA (zero adapter 0.15 ×5), distillation. None beat unchanged Budget-Fit; most scored lower.
+- **Decision:** no new bundle. Our `v5` mean (0.173 over 7 sound draws) matches the recipe's public mean, and the 0.24 teams are best-of-many draws of the same recipe. Keep the daily draws, and pick finals by run health and earlier date.
+- **Open risk:** topic 759388 asks whether new notebook versions can be created after the 2026-11-25 publishing deadline. Our submission kernels v8 and v9 already exist.
