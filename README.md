@@ -29,5 +29,5 @@ uv run g4 package submissions/v1_scaffold              # dist/v1_scaffold.zip fo
 uv run g4 draws sync && uv run g4 draws report        # Draw ledger: per-bundle means, Final pick candidates
 uv run g4 draws next                                   # today's Daily slot (exit 0 = submit, 3 pending, 4 used, 5 paused)
 ```
-Daily draws run from `scripts/daily_draws.sh` (rotation in `experiments/slot.yaml`). Install it once with
-`cp scripts/launchd/com.g4.daily-draws.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.g4.daily-draws.plist`.
+Daily draws run from `scripts/daily_draws.sh` (rotation in `experiments/slot.yaml`). It is started from a terminal, not launchd, because macOS blocks launchd jobs from reading `~/Documents`. Start it again after a reboot with
+`nohup scripts/daily_draws_loop.sh >> ~/Library/Logs/g4-daily-draws.log 2>&1 & disown`.

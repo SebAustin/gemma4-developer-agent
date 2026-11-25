@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One attempt at today's Daily slot (see CONTEXT.md). launchd runs this every 30 minutes.
+# One attempt at today's Daily slot (see CONTEXT.md). scripts/daily_draws_loop.sh runs it every 30 minutes.
 # It submits only when `g4 draws next` exits 0 AND no stamp for today exists, so reruns,
 # pending draws, an already used slot, a lagging Kaggle listing or a submit whose CLI call
 # timed out are all no-ops. Standing user approval for daily draws: 2026-11-15, until
