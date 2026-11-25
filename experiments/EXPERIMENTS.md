@@ -204,3 +204,7 @@ From draw 14 (2026-11-25) draws are recorded only in the Draw ledger, `experimen
 - **Public levers since 11-13:** 40 calls, pinned issue, T 0.4, larger output cap, verification paragraphs, LoRA (zero adapter 0.15 ×5), distillation. None beat unchanged Budget-Fit; most scored lower.
 - **Decision:** no new bundle. Our `v5` mean (0.173 over 7 sound draws) matches the recipe's public mean, and the 0.24 teams are best-of-many draws of the same recipe. Keep the daily draws, and pick finals by run health and earlier date.
 - **Open risk:** topic 759388 asks whether new notebook versions can be created after the 2026-11-25 publishing deadline. Our submission kernels v8 and v9 already exist.
+
+## 2026-11-25: Final pick selected (option (a), user decision)
+
+Selected on the Kaggle Submissions page (2/2): **58346883** (draw 5, `v5_budgetfit`, public 0.22, 2026-11-14) and **58379290** (draw 6, `v5_budgetfit`, public 0.18, 2026-11-15). These were already Kaggle's auto-selection candidates. Rule: the two best healthy draws, earlier date on ties (`g4 draws report`). With two explicit selections Kaggle no longer auto-picks, so a later draw at 0.19 or more would have to be swapped in by hand. Daily draws continue until 2026-12-01.
