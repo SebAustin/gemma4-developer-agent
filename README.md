@@ -26,4 +26,8 @@ uv run g4 validate submissions/v1_scaffold             # compile with the real h
 uv run g4 kernel submissions/v1_scaffold --split dev30 # render a Kaggle eval kernel
 kaggle kernels push -p kaggle/runs/<slug>              # run it on Kaggle L4x4 (spends GPU quota)
 uv run g4 package submissions/v1_scaffold              # dist/v1_scaffold.zip for submission
+uv run g4 draws sync && uv run g4 draws report        # Draw ledger: per-bundle means, Final pick candidates
+uv run g4 draws next                                   # today's Daily slot (exit 0 = submit, 3 pending, 4 used, 5 paused)
 ```
+Daily draws run from `scripts/daily_draws.sh` (rotation in `experiments/slot.yaml`). Install it once with
+`cp scripts/launchd/com.g4.daily-draws.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.g4.daily-draws.plist`.

@@ -47,8 +47,20 @@ One scored submission of a bundle. Identical submissions of one bundle are repea
 _Avoid_: run (a run is a dev evaluation), attempt
 
 **Failed draw**:
-A draw that resolves at most about 2 public tasks when other draws of the same bundle resolve 7 or more. It is read as a scoring or infrastructure failure, not the bundle's skill: it is left out of the bundle's mean but counted in its failure rate, which matters for the final pick because one failed final submission sinks the private score.
+A draw that resolves at most 2 of the 58 public tasks when the median of the same bundle's other scored draws is 7 or more. A bundle's first draw has no others to compare against and is unrated until a second draw is scored. It is read as a scoring or infrastructure failure, not the bundle's skill: it is left out of the bundle's mean but counted in its failure rate, which matters for the final pick because one failed final submission sinks the private score.
 _Avoid_: bad draw, outlier
+
+**Draw ledger**:
+The record of every draw the team has submitted: which bundle it was, its draw number, and its score once scored. A bundle's mean and failure rate are read from it.
+_Avoid_: submission log, history
+
+**Daily slot**:
+The one submission the competition allows per UTC day. The slot rotation is the ordered list of bundles that take turns in it, one per draw number.
+_Avoid_: quota (that is the weekly GPU allowance)
+
+**Final pick**:
+The two submissions chosen to be scored on the private leaderboard.
+_Avoid_: final submission (a submission is the act, not the choice)
 
 **Public leaderboard score**:
 A team's best score over all its submissions on the public tasks. Because each submission is a fresh draw from the leaderboard noise, it rises with the number of submissions even when the bundle does not change. Compare bundles by the mean of their draws, never by a team's public leaderboard score.

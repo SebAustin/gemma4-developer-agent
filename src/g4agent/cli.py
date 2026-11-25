@@ -1,12 +1,18 @@
-"""``g4`` command line: validate / package bundles and manage dev splits."""
+"""``g4`` command line: validate / package bundles, manage dev splits and the Draw ledger."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import shlex
+import shutil
+import subprocess
 import sys
+from datetime import date, datetime, timezone
 from pathlib import Path
 
+from . import draws as draws_mod
 from .compare import compare_runs, load_results, run_label
 from .kaggle_ops import render_kernel, render_oracle_kernel, render_submission_kernel
 from .package import PackagingError, bundle_hash, package_bundle
@@ -70,6 +76,55 @@ def _cmd_submission_kernel(args: argparse.Namespace) -> int:
     return 0
 
 
+def _fetch_listing(competition: str) -> str:
+    """Adapter at the listing seam: the live Kaggle CLI (tests pass --listing instead)."""
+    kaggle = shlex.split(os.environ.get("KAGGLE_BIN", "kaggle"))
+    if shutil.which(kaggle[0]) is None:
+        raise draws_mod.LedgerError(f"kaggle CLI not found ({kaggle[0]!r}); set KAGGLE_BIN")
+    proc = subprocess.run([*kaggle, "competitions", "submissions", competition, "--csv",
+                           "--page-size", str(draws_mod.LISTING_PAGE_SIZE)],
+                          capture_output=True, text=True, timeout=120, check=False)
+    if proc.returncode != 0:
+        raise draws_mod.LedgerError(f"kaggle submissions failed ({proc.returncode}): {proc.stderr.strip()[-300:]}")
+    return proc.stdout
+
+
+def _cmd_draws(args: argparse.Namespace) -> int:
+    try:
+        slot = draws_mod.SlotConfig.load(args.slot)
+        if args.action == "sync":
+            listing = Path(args.listing).read_text(encoding="utf-8") if args.listing else _fetch_listing(slot.competition)
+            ledger = draws_mod.build_ledger(listing, slot)
+            if Path(args.ledger).exists():
+                draws_mod.check_listing_covers(draws_mod.read_ledger(args.ledger), ledger)
+            draws_mod.write_ledger(args.ledger, ledger)
+            print(f"{len(ledger)} submissions written to {args.ledger}")
+            return 0
+        ledger = draws_mod.read_ledger(args.ledger)
+    except (draws_mod.LedgerError, OSError) as e:
+        print(f"g4 draws {args.action}: {e}", file=sys.stderr)
+        return 1
+    if args.action == "report":
+        print(draws_mod.report(ledger))
+        return 0
+    today = date.fromisoformat(args.today) if args.today else datetime.now(timezone.utc).date()
+    try:
+        decision = draws_mod.next_draw(ledger, slot, today)
+    except draws_mod.LedgerError as e:
+        print(f"g4 draws next: {e}", file=sys.stderr)
+        return 1
+    if args.shell:
+        values = {"DRAW": decision.draw or "", "KERNEL_VERSION": decision.kernel or "",
+                  "MESSAGE": decision.message, "REASON": decision.reason,
+                  "COMPETITION": slot.competition, "KERNEL": slot.kernel}
+        print("\n".join(f"{k}={shlex.quote(str(v))}" for k, v in values.items()))
+    else:
+        print(decision.reason)
+        if decision.command:
+            print(decision.command)
+    return decision.code
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="g4")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -115,6 +170,15 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("submission-kernel", help="render a CPU kernel that outputs submission.zip")
     p.add_argument("bundle")
     p.set_defaults(func=_cmd_submission_kernel)
+
+    p = sub.add_parser("draws", help="Draw ledger: sync from Kaggle, report means, say today's draw")
+    p.add_argument("action", choices=["sync", "report", "next"])
+    p.add_argument("--slot", default=str(ROOT / "experiments" / "slot.yaml"))
+    p.add_argument("--ledger", default=str(ROOT / "experiments" / "draws.csv"))
+    p.add_argument("--listing", help="sync: read this saved `kaggle ... --csv` output instead of calling Kaggle")
+    p.add_argument("--today", help="next: UTC date to decide for (default: today, UTC)")
+    p.add_argument("--shell", action="store_true", help="next: print shell-quoted DRAW/KERNEL_VERSION/MESSAGE")
+    p.set_defaults(func=_cmd_draws)
 
     args = parser.parse_args(argv)
     return args.func(args)

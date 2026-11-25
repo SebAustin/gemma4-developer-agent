@@ -1,0 +1,23 @@
+# Slot rotation for the Daily slot (see CONTEXT.md). Read by `g4 draws`.
+# ADR 0008 decides which bundles are in the rotation; this file only records it.
+competition: gemma-4-developer-agent
+kernel: sebmontreal/g4-submission
+public_tasks: 58
+pause: false            # true stops `g4 draws next` from proposing a draw (exit 5)
+description_suffix: "harness swegemma 0.2.11 (attribution in submissions/ATTRIBUTION.md)"
+
+# Kernel version of sebmontreal/g4-submission -> the bundle its submission.zip holds
+# (hashes verified from the kernel logs).
+kernels:
+  8: {bundle: v5_budgetfit, hash: a975adbcd250}
+  9: {bundle: v8_temp1, hash: 15e1bb7b9357}
+
+# Draw n goes to kernel rotation[n % len(rotation)]: even draws v8 (v5_budgetfit),
+# odd draws v9 (v8_temp1). User go-ahead 2026-11-15.
+rotation: [8, 9]
+
+# Draws whose description predates the "kernel vN, daily draw N" convention.
+backfill:
+  "58109075": {draw: 1, kernel: 8}
+  "58144231": {draw: 2, kernel: 8}
+  "58222745": {draw: 3, kernel: 8}

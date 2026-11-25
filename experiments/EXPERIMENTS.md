@@ -169,6 +169,8 @@ Notes:
 Code competition: the zip must be a kernel output. Run `g4 submission-kernel <bundle>`, push it, then `kaggle competitions submit gemma-4-developer-agent -k sebmontreal/g4-submission -f submission.zip -v <N>`. Wait for version N's own run to finish (the status call may still show the previous version's COMPLETE), and check that its log prints the expected bundle hash.
 - The team may have only one pending submission. A submit sent while another is still scoring fails with a bare `400 Bad Request` from the CLI; the server's message reads "Your team already has 1 pending submissions" (seen 2026-11-08, while `v3_guard` was scoring). A submit sent after the day's slot is used gets the same bare `400` (seen 2026-11-08 20:19 UTC, nothing pending; the slot counts UTC days, so 18:00 CST is the reset). A rejected submit does not use the day's slot. A run scores for up to 12 h (58144231 took about 13 h 5 min from submit to score, so queueing can add an hour), so a submission sent after about 12:00 UTC can still be pending when the next slot opens at 00:00 UTC and delay it. Submit before 12:00 UTC to keep the next day's slot free.
 
+From draw 14 (2026-11-25) draws are recorded only in the Draw ledger, `experiments/draws.csv`, synced from Kaggle with `g4 draws sync`. `g4 draws report` gives per-bundle means and Failed-draw rates. The table below is frozen history up to draw 13. Draws 11–13 scored 0.17 (v8_temp1), 0.15 (v5), 0.15 (v8_temp1). No submissions went in on 2026-11-23 and 11-24: the old scratch loop died, probably at a reboot.
+
 | date | ref | bundle hash | public LB | notes |
 |---|---|---|---|---|
 | 2026-11-20 | 58606888 | 15e1bb7b9357 | pending | v8_temp1 daily draw 11 (kernel v9) |
